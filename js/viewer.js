@@ -57,6 +57,9 @@
                 timeout = setTimeout(() => reject(new Error('Artwork timed out.')), 20000);
               }),
             ]);
+            matching
+              .filter((element) => element.hasAttribute('data-avatar-image'))
+              .forEach((element) => T.fitAvatarImage(element, image));
           } catch {
             matching
               .filter((element) => element.hasAttribute('data-avatar-image'))
@@ -104,7 +107,6 @@
         const result = await T.renderDetailedAsync(request);
         if (current !== revision) return null;
         $('render-image').innerHTML = result.svg;
-        T.applyAvatarFallbacks($('render-image'));
         await artworkReady();
         if (current !== revision) return null;
         state = request;

@@ -147,6 +147,8 @@ const png = await Tabletop.toAvatarPNG(player, { size: 512 }); // Browser; PNG B
 Tabletop.download(png, 'alice-avatar.png');
 ```
 
+For your own inline preview, insert `avatarSVG()` into a container and call `await Tabletop.applyAvatarFallbacks(container)`. This resolves image dimensions and fallback state, including centered crops for SVG image URLs without a `viewBox`. The playground and URL viewer handle this automatically. Raw SVG strings retain external URLs; portable SVG/PNG exports include the resolved crop.
+
 The standalone helpers also accept just `{name, color, avatarUrl}` without a full game state. Name and color are optional there; the defaults are `Player` and a muted green. The fallback uses up to two initials and the player's color, with contrasting text. Missing URLs, load failures, invalid images, and failed embedding use this fallback. Avatar failures do not prevent the URL viewer becoming ready or interrupt scene/player exports. Fallbacks are drawn as SVG shapes and text, so they need no network request. The supplied URL remains in state so the caller can retry later.
 
 In the playground, **Players → Player details** provides the URL field, 64/32/24 px previews, **Use initials**, and an avatar PNG download with 32/64/128/256/512 px presets. The scene and avatar exports use the same crop. Successfully embedded avatar images are reused within a player export batch.

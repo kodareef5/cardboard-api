@@ -9,6 +9,24 @@
       reader.readAsDataURL(blob);
     });
   }
+  async function readImage(source) {
+    const image = new Image();
+    image.src = source;
+    let timer;
+    try {
+      await Promise.race([
+        image.decode(),
+        new Promise((_, reject) => {
+          timer = setTimeout(() => reject(new Error('Image timed out.')), 12000);
+        }),
+      ]);
+      if (!(image.naturalWidth > 0 && image.naturalHeight > 0))
+        throw new Error('Image has no dimensions.');
+      return image;
+    } finally {
+      clearTimeout(timer);
+    }
+  }
   async function embedImages(source, artworkCache = new Map()) {
     const document = new DOMParser().parseFromString(source, 'image/svg+xml');
     if (document.querySelector('parsererror'))
@@ -18,6 +36,12 @@
       ...new Set(images.map((image) => image.getAttribute('href')).filter(Boolean)),
     ];
     const embedded = new Map();
+    const avatars = new Set(
+      images
+        .filter((image) => image.hasAttribute('data-avatar-image'))
+        .map((image) => image.getAttribute('href')),
+    );
+    const dimensions = new Map();
     // A URL used by a card is still required, even if an avatar uses it too.
     const optional = new Set(
       sources.filter((url) =>
@@ -38,6 +62,7 @@
               const cached = artworkCache.get(url);
               if (!cached) throw new Error('Image unavailable.');
               embedded.set(url, cached);
+              if (avatars.has(url)) dimensions.set(url, await readImage(cached));
               continue;
             }
             let data = url;
@@ -55,9 +80,8 @@
             }
             // An SVG can decode successfully even when one of its child images is broken.
             // Required card art must decode; optional avatars can use their initials tile.
-            const image = new Image();
-            image.src = data;
-            await image.decode();
+            const image = await readImage(data);
+            if (avatars.has(url)) dimensions.set(url, image);
             embedded.set(url, data);
             artworkCache.set(url, data);
           } catch {
@@ -77,10 +101,11 @@
     );
     if (failure) throw failure;
     images.forEach((image) => {
-      const value = embedded.get(image.getAttribute('href'));
+      const url = image.getAttribute('href');
+      const value = embedded.get(url);
       if (value) {
         image.setAttribute('href', value);
-        if (image.hasAttribute('data-avatar-image')) setAvatarLoaded(image, true);
+        if (image.hasAttribute('data-avatar-image')) fitAvatarImage(image, dimensions.get(url));
       } else if (image.hasAttribute('data-avatar-image')) image.remove();
     });
     return new XMLSerializer().serializeToString(document);
@@ -127,18 +152,40 @@
     const svg = await toAvatarSVG(player, { size });
     return rasterizeSVG(svg, size, size);
   }
-  function applyAvatarFallbacks(root) {
-    root.querySelectorAll('[data-avatar-image]').forEach((image) => {
-      image.addEventListener('load', () => setAvatarLoaded(image, true), { once: true });
-      image.addEventListener(
-        'error',
-        () => {
-          setAvatarLoaded(image, false);
-          image.remove();
-        },
-        { once: true },
-      );
-    });
+  async function applyAvatarFallbacks(root) {
+    const images = [...root.querySelectorAll('[data-avatar-image]')];
+    const sources = [...new Set(images.map((image) => image.getAttribute('href')))];
+    images.forEach((image) => image.setAttribute('visibility', 'hidden'));
+    await Promise.all(
+      sources.map(async (url) => {
+        const matching = images.filter((image) => image.getAttribute('href') === url);
+        try {
+          const decoded = await readImage(url);
+          matching.forEach((image) => fitAvatarImage(image, decoded));
+        } catch {
+          matching.forEach((image) => {
+            setAvatarLoaded(image, false);
+            image.remove();
+          });
+        }
+      }),
+    );
+  }
+  function fitAvatarImage(image, decoded) {
+    const width = decoded.naturalWidth,
+      height = decoded.naturalHeight;
+    if (!(width > 0 && height > 0)) throw new Error('Avatar has no image dimensions.');
+    // Size SVG sources at their intrinsic viewport before cropping, including SVGs
+    // without a viewBox. A 100×100 image rectangle alone can crop those at the origin.
+    image.setAttribute('width', width);
+    image.setAttribute('height', height);
+    image.setAttribute(
+      'transform',
+      `translate(50 50) scale(${100 / Math.min(width, height)}) translate(${-width / 2} ${-height / 2})`,
+    );
+    image.setAttribute('preserveAspectRatio', 'none');
+    image.removeAttribute('visibility');
+    setAvatarLoaded(image, true);
   }
   function setAvatarLoaded(image, loaded) {
     // Preserve the colored background for transparent PNGs, without initials showing through.
@@ -201,6 +248,7 @@
     toAvatarSVG,
     toAvatarPNG,
     applyAvatarFallbacks,
+    fitAvatarImage,
     exportPlayers,
     toPlayerZIP,
     download,
