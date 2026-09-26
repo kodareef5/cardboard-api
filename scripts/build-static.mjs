@@ -1,5 +1,6 @@
-import { cp, mkdir, rm } from 'node:fs/promises';
+import { cp, mkdir, rm, writeFile } from 'node:fs/promises';
 import { fileURLToPath } from 'node:url';
+import T from '../tabletop.mjs';
 
 const root = new URL('../', import.meta.url);
 const output = new URL('dist/', root);
@@ -14,10 +15,25 @@ for (const asset of [
   'js',
   'examples',
   'README.md',
+  'EXTRAS.md',
   'llm.txt',
 ]) {
   await cp(new URL(asset, root), new URL(asset, output), { recursive: true });
 }
 // Keep both agent-guide URLs identical, with one source to maintain.
 await cp(new URL('llm.txt', root), new URL('llms.txt', output));
+for (const item of T.listExamples()) {
+  await writeFile(
+    new URL(`examples/${item.id}.json`, output),
+    JSON.stringify(T.toConfig(T.example(item.id)), null, 2) + '\n',
+  );
+}
+await writeFile(
+  new URL('examples/index.json', output),
+  JSON.stringify(
+    T.listExamples().map((item) => ({ ...item, file: `${item.id}.json` })),
+    null,
+    2,
+  ) + '\n',
+);
 console.log(`Static site ready: ${fileURLToPath(output)}`);

@@ -1,10 +1,12 @@
 // Native Node entry point. The browser loads these same dependency-free rendering services.
 import './js/engine.js';
+import './js/extras.js';
 import './js/perspective.js';
 import './js/layout.js';
 import './js/scryfall.js';
 import './js/renderer.js';
 import './js/url.js';
+import './js/library.js';
 import { createScryfallDiskStore } from './scryfall-cache.mjs';
 globalThis.Tabletop.scryfall = globalThis.Tabletop.createScryfallClient({
   store: createScryfallDiskStore(process.env.TABLETOP_SCRYFALL_CACHE || undefined),
@@ -31,6 +33,13 @@ export const {
   readRenderURL,
   createRenderURL,
   urlLimits,
+  formatCounter,
+  normalizeCounters,
+  playerCounters,
+  listGlowEffects,
+  listFocusLayouts,
+  listExamples,
+  example,
   renderDetailedAsync,
   createScryfallClient,
   resolveScryfall,

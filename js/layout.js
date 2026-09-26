@@ -42,7 +42,7 @@
   function zonePanels(panel) {
     const { player, x, y, w, h } = panel;
     const margin = 14,
-      header = 47,
+      header = panel.header ?? 47,
       gap = 10;
     const area = { x: x + margin, y: y + header, w: w - margin * 2, h: h - header - margin };
     const isStandard =
@@ -55,7 +55,12 @@
         topH = area.h * 0.59;
       const rects = {
         library: { x: area.x, y: area.y, w: side, h: topH },
-        battlefield: { x: area.x + side + gap, y: area.y, w: area.w - 2 * (side + gap), h: topH },
+        battlefield: {
+          x: area.x + side + gap,
+          y: area.y,
+          w: area.w - 2 * (side + gap),
+          h: topH,
+        },
         graveyard: { x: area.x + area.w - side, y: area.y, w: side, h: topH },
         hand: { x: area.x, y: area.y + topH + gap, w: area.w, h: area.h - topH - gap },
       };
@@ -108,7 +113,8 @@
     const { player, x, y, w, h } = panel;
     const hand = player.zones.find((z) => z.id === 'hand');
     if (!hand || player.zones.length === 1) return zonePanels(panel);
-    const area = { x: x + 14, y: y + 47, w: w - 28, h: h - 61 };
+    const header = panel.header ?? 47;
+    const area = { x: x + 14, y: y + header, w: w - 28, h: Math.max(4, h - header - 14) };
     const handHeight = (area.h - 12) * 0.46;
     const boards = player.zones.filter((z) => z !== hand);
     const boardHeight = area.h - handHeight - 12;
@@ -123,7 +129,12 @@
         battlefield: { x: area.x + side + 10, w: area.w - 2 * (side + 10) },
         graveyard: { x: area.x + area.w - side, w: side },
       };
-      rects = boards.map((zone) => ({ zone, ...positions[zone.id], y: area.y, h: boardHeight }));
+      rects = boards.map((zone) => ({
+        zone,
+        ...positions[zone.id],
+        y: area.y,
+        h: boardHeight,
+      }));
     } else {
       const columns = Math.min(boards.length, boards.length > 4 ? 3 : 2);
       const rows = Math.ceil(boards.length / columns);
@@ -192,7 +203,11 @@
       const rows = Math.ceil(n / cols);
       const cw = Math.max(
         2,
-        Math.min(maxWidth, (w - (cols - 1) * gap) / cols, ((h - (rows - 1) * gap) * 0.7) / rows),
+        Math.min(
+          maxWidth,
+          (w - (cols - 1) * gap) / cols,
+          ((h - (rows - 1) * gap) * 0.7) / rows,
+        ),
       );
       const ch = cw / 0.7,
         gridH = rows * ch + (rows - 1) * gap;

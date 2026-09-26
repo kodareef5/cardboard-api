@@ -170,6 +170,10 @@
         fail('Card suit must be spades, hearts, clubs, or diamonds.');
       if (!validArt(card.artUrl))
         fail('Artwork must use an HTTP(S) URL or a PNG, JPEG, WebP, GIF, or AVIF data URL.');
+      if (card.artMode !== undefined && !['illustration', 'full-card'].includes(card.artMode))
+        fail('Artwork mode must be illustration or full-card.');
+      if (card.artMode === 'full-card' && !card.artUrl)
+        fail('Full card scans need an artwork URL or uploaded image.');
       if (card.art !== undefined) integer(card.art, 0, 3, 'Demo artwork');
     }
     return deck;
@@ -233,6 +237,7 @@
     }
     players.forEach((player) => {
       player.stats = { life: 20, score: 0, ...player.stats };
+      if (player.counters !== undefined) player.counters = T.normalizeCounters(player.counters);
       if (Array.isArray(player.zones))
         player.zones.forEach((z) => {
           z.cardIds ??= [];
@@ -255,6 +260,8 @@
         zoom: 1,
         density: 'balanced',
         stats: 'compact',
+        counterFormat: 'exact',
+        counterCap: 99,
         labels: true,
         viewerId: null,
         playerScope: 'table',
@@ -263,6 +270,7 @@
       activeDeckId: config.activeDeckId ?? (setup === 'commander' ? 'arcana' : 'standard'),
       decks: [...deckMap.values()],
       players,
+      extras: T.normalizeExtras(config.extras),
     };
     if (state.view.mode === 'player' && state.view.viewerId === null)
       state.view.viewerId = state.view.playerId;
@@ -302,7 +310,7 @@
       }
       if (Object.keys(player.stats).length > 8) fail('Use at most eight stats per player.');
       if (!Array.isArray(player.zones)) fail('Player zones must be an array.');
-      integer(player.zones.length, 1, 8, 'Zones per player');
+      integer(player.zones.length, 1, 16, 'Zones per player');
       unique(player.zones, 'Zones');
       player.zones.forEach((z) => {
         str(z.id, 'Zone ID', 80);
@@ -337,6 +345,7 @@
     const player = state.players.find((p) => p.id === view.playerId);
     if (!player || !player.zones.some((z) => z.id === view.zoneId))
       fail('The selected player and zone must exist.');
+    T.validateExtras(state);
     return state;
   }
   function hash(text) {
@@ -389,8 +398,10 @@
       !state.players.some((p) => p.id === state.view.viewerId)
     )
       state.view.viewerId = player.id;
+    T.repairExtras(state);
   }
   function clearReferences(state) {
+    state.extras = T.normalizeExtras();
     state.players.forEach((p) =>
       p.zones.forEach((z) => {
         z.cardIds = [];
@@ -433,6 +444,7 @@
         if (p.name !== undefined) player.name = p.name;
         if (p.color !== undefined) player.color = p.color;
         if (p.stats !== undefined) player.stats = { ...player.stats, ...p.stats };
+        if (p.counters !== undefined) player.counters = T.normalizeCounters(p.counters);
         break;
       }
       case 'zone.update': {
@@ -441,8 +453,12 @@
           if (p[key] !== undefined) z[key] = p[key];
         if (p.count !== undefined && p.cardIds === undefined)
           z.cardIds = z.cardIds.slice(0, p.count);
+        T.repairExtras(next);
         break;
       }
+      case 'extras.update':
+        next.extras = T.normalizeExtras({ ...next.extras, ...p });
+        break;
       case 'zone.add': {
         const { player } = locate(next, p.playerId);
         player.zones.push({
@@ -475,6 +491,7 @@
         source.zone.count -= count;
         target.zone.cardIds = [...moved, ...target.zone.cardIds];
         target.zone.count += count;
+        T.transferExtras(next, p.from, p.to, count);
         break;
       }
       case 'deck.select':
@@ -504,6 +521,7 @@
         if (!deck) fail('Deck not found.');
         if (!deck.cards.some((card) => card.id === p.id)) fail('Card not found.');
         deck.cards = deck.cards.filter((card) => card.id !== p.id);
+        if (deck.id === next.activeDeckId) next.extras = T.normalizeExtras();
         if (deck.id === next.activeDeckId)
           next.players.forEach((player) =>
             player.zones.forEach((z) => {
@@ -521,6 +539,8 @@
           view: {
             density: next.view.density,
             stats: next.view.stats,
+            counterFormat: next.view.counterFormat,
+            counterCap: next.view.counterCap,
             labels: next.view.labels,
           },
         });
@@ -614,7 +634,7 @@
     toConfig,
     themes: THEMES,
     builtInDecks: clone([standard, arcana]),
-    limits: { maxCards: MAX_CARDS },
+    limits: { maxCards: MAX_CARDS, maxZones: 16 },
     clone,
   });
 })(globalThis);

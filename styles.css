@@ -2847,3 +2847,217 @@ dialog::backdrop {
     height: 12px;
   }
 }
+
+/* Extras share the same request as the scene; the controls are only an editor. */
+#controls-extras > .text-button {
+  margin: 0 0 20px;
+  font-size: 11px;
+}
+.glow-presets {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 7px;
+  margin-bottom: 18px;
+}
+.glow-presets button {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  border: 1px solid var(--line, #dce0d3);
+  border-radius: 7px;
+  background: #f0f0e8;
+  padding: 17px 4px 10px;
+  color: #526454;
+  font-size: 10px;
+  line-height: 1.3;
+  font-family: inherit;
+  cursor: pointer;
+}
+.glow-presets button.active {
+  border-color: #24523f;
+  background: #e8ede3;
+}
+.glow-sample {
+  display: block;
+  width: 24px;
+  height: 34px;
+  border: 1px solid var(--glow);
+  border-radius: 3px;
+  background: #203a34;
+  box-shadow:
+    0 0 8px 3px var(--glow),
+    inset 0 0 6px #ffffff30;
+}
+#controls-extras .full-width {
+  margin-top: 8px;
+}
+#controls-extras .switch-row {
+  margin-bottom: 16px;
+}
+#controls-extras textarea {
+  width: 100%;
+  resize: vertical;
+  min-height: 80px;
+  padding: 10px;
+  border: 1px solid #dce0d3;
+  border-radius: 5px;
+  font:
+    11px/1.6 ui-monospace,
+    monospace;
+  background: #fbfaf7;
+  color: #263d36;
+}
+.highlight-list {
+  margin-top: 13px;
+  display: grid;
+  gap: 5px;
+}
+.highlight-list > div {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  background: #eef0e8;
+  border-radius: 5px;
+  padding: 7px 8px;
+  font-size: 10px;
+  overflow-wrap: anywhere;
+}
+.highlight-list small {
+  display: block;
+  margin-top: 4px;
+  opacity: 0.65;
+}
+.counter-editor-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) 22px;
+  gap: 8px;
+  padding: 12px 0;
+  border-bottom: 1px solid #e3e4db;
+}
+.counter-editor-row label {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  font-size: 8px;
+  letter-spacing: 0.6px;
+  color: #7b8975;
+}
+.counter-editor-row input,
+.counter-editor-row select {
+  min-width: 0;
+  width: 100%;
+  border: 1px solid #dce0d3;
+  border-radius: 4px;
+  padding: 7px;
+  background: #fbfaf7;
+  color: #253b32;
+  font-size: 11px;
+  line-height: 1.25;
+  font-family: inherit;
+}
+.counter-editor-row .icon-button {
+  align-self: center;
+  width: 22px;
+  min-width: 22px;
+  font-size: 18px;
+}
+.counter-format-field {
+  grid-column: 1;
+}
+.counter-format-preview {
+  grid-column: 2 / 4;
+  align-self: end;
+  padding-bottom: 6px;
+  font-size: 11px;
+  overflow-wrap: anywhere;
+  font-variant-numeric: tabular-nums;
+}
+.counter-samples {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+.counter-samples button {
+  padding: 4px 6px;
+  border: 1px solid #dce0d3;
+  border-radius: 4px;
+  background: #f0f2e9;
+  color: #53674f;
+  font-size: 9px;
+  cursor: pointer;
+}
+#player-counters {
+  margin: 22px 0;
+}
+.example-library {
+  margin: 10px 0 35px;
+}
+.example-library h2 {
+  margin: 9px 0;
+  font:
+    25px Georgia,
+    serif;
+  color: #294137;
+}
+.example-library > p {
+  color: #859079;
+  font-size: 12px;
+  margin: 0 0 22px;
+}
+.example-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 16px;
+}
+.example-card {
+  border: 1px solid #dfe2d5;
+  border-radius: 9px;
+  overflow: hidden;
+  padding: 0 0 17px;
+  display: flex;
+  flex-direction: column;
+  gap: 9px;
+  text-align: left;
+  background: #fbfaf7;
+  cursor: pointer;
+  color: #30483c;
+  min-width: 0;
+}
+.example-card:hover {
+  border-color: #6d8a72;
+  box-shadow: 0 6px 20px #1d382010;
+}
+.example-card img {
+  display: block;
+  width: 100%;
+  height: 175px;
+  object-fit: contain;
+  background: #ebece2;
+  padding: 8px;
+}
+.example-card > span,
+.example-card > strong {
+  margin: 0 15px;
+}
+.example-card > .eyebrow {
+  margin-top: 6px;
+  font-size: 8px;
+}
+.example-card > strong {
+  font:
+    19px Georgia,
+    serif;
+}
+.example-card > span:last-child {
+  font-size: 11px;
+  line-height: 1.6;
+  color: #859079;
+}
+@media (max-width: 480px) {
+  .example-grid {
+    grid-template-columns: 1fr;
+  }
+}

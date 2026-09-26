@@ -84,9 +84,12 @@ Both `index.html` and `render.html` are real files, so fragment URLs require no 
 - **Stage:** dimensions from 64–4096 px per side; square/SMS, portrait/social, and presentation presets; four themes; texture; density; stats; zone labels; and a preview-only safe-area guide. Scene zoom changes the rendered composition. Preview fitting only changes the size it is displayed on your screen.
 - **Players:** 1–8 players, names, colors, life, score, and a draw action.
 - **Player images:** choose **Player view**, select the recipient, and choose **Everyone’s board + own hand** or **Own board + hand**. The recipient's board and hand get the prominent panel. Under **Players → Player images**, export the selected player, all players in the current version, or both versions for everyone. Batches download as one PNG ZIP with numbered filenames and a manifest.
-- **Zones:** per-player counts from 0–1,000,000, custom areas (up to 8 per player), stacks, fans, grids, face visibility, and card transfers. Click a zone in the preview to focus it. Overview shows all players.
+- **Zones:** per-player counts from 0–1,000,000, custom areas (up to 16 per player), stacks, fans, grids, face visibility, and card transfers. Click a zone in the preview to focus it. Overview shows all players.
 - **Cards:** a standard 52-card deck and an original illustrated demo; add, edit, delete, search, and import cards. Large catalogs are paginated. Import accepts a deck object, an array of card objects, or an array of names. Missing card IDs are assigned on file import.
 - **API:** editable live JSON configuration, working JavaScript example, and recent state transitions.
+- **Extras:** six glow presets; highlight one position, a zone, or repeated card IDs; feature one card in Spotlight, Side by side, or Showcase; annotate cards with counters, badges, tags, and turned/concealed states.
+- **Named counters:** Players has a name/count editor with number-format overrides. Stage chooses the default format and display density. The sample buttons exercise 99, 100, 999, 9999, 99999999, and infinity.
+- **Scene library:** the API page has seven editable game/effect fixtures. See [extras and game examples](EXTRAS.md) for the schema and coverage.
 - **Render link:** create a standalone or embedded URL for the current request. The playground address bar also tracks changes. URL requests take precedence over locally saved scenes when reopening the playground.
 - **Export:** exact-size PNG, portable SVG, or reusable scene JSON. Changes persist in browser storage when available. Save scene is the portable backup; browser storage is specific to the file path/origin and can be cleared by the browser. Undo/redo retain the last 40 commands for the current session.
 
@@ -123,7 +126,7 @@ unsubscribe();
 
 You can also call `Tabletop.render(config)` or `Tabletop.toPNG(config)` without creating an engine. `renderDetailed(config)` returns `{svg, metrics}` with total card counts and the number actually drawn. All engine snapshots are copies. Commands validate their complete candidate state before committing, emitting an event, or entering history. Invalid commands throw and leave state unchanged. Importing a valid configuration is an undoable `state.replace` command.
 
-To embed this in another static page, load `js/engine.js`, `js/perspective.js`, `js/layout.js`, `js/scryfall.js`, and `js/renderer.js` in that order. Add `js/archive.js` and `js/export.js` for browser image and ZIP export, and `js/url.js` for URL helpers. The playground in `js/app.js` and standalone viewer in `js/viewer.js` are optional interfaces over the same renderer.
+To embed this in another static page, load `js/engine.js`, `js/extras.js`, `js/perspective.js`, `js/layout.js`, `js/scryfall.js`, and `js/renderer.js` in that order. Add `js/archive.js` and `js/export.js` for browser image and ZIP export, `js/url.js` for URL helpers, and `js/library.js` for example fixtures. The playground in `js/app.js`/`js/studio-extras.js` and standalone viewer in `js/viewer.js` are optional interfaces over the same renderer.
 
 ## Images for each player
 
@@ -222,11 +225,14 @@ Minimal configurations are expanded by `Tabletop.normalize(config)`. Use `Tablet
 | `view.zoom` | Number 0.6–1.8; larger values intentionally crop the scene |
 | `view.density` | `"calm"`, `"balanced"`, `"dense"` |
 | `view.stats` | `"hidden"`, `"compact"`, `"full"` |
+| `view.counterFormat` | `"exact"` (default), `"compact"`, `"capped"`, `"scientific"` |
+| `view.counterCap` | Positive safe integer; default `99`; used only for capped formatting |
+| `extras` | `highlights`, `focus`, `cards`; see [EXTRAS.md](EXTRAS.md) |
 | `seed` | Integer 0–2147483646 |
 | `activeDeckId` | The ID of a deck in `decks`, or `"standard"` / `"arcana"` |
 | `decks` | Deck objects to add or override, up to 30 including built-ins |
 
-A full player object has `id`, `name`, six-digit hex `color`, numeric `stats`, and `zones`. Stats default to life/score. Compact shows the first stat; full shows two labeled stats in overview and up to six when focused. Zone IDs are local to a player. The same zone IDs can be reused across players.
+A full player object has `id`, `name`, six-digit hex `color`, `zones`, and optionally a `counters` list of `{name, count}` objects. The list takes precedence over the legacy numeric `stats` object, which still defaults to life/score. Compact shows the first counter; full uses an adaptive grid with an explicit overflow count when space is limited. Values fit their cells without silently capping or rounding exact mode. Zone IDs are local to a player. The same zone IDs can be reused across players. See [counter options and edge cases](EXTRAS.md#named-counters).
 
 ```json
 {
@@ -261,7 +267,7 @@ Import `examples/custom-deck.json`, or use this shape:
 }
 ```
 
-Cards need a unique `id` and `name`. Optional fields are `rank`, `suit` (`spades`, `hearts`, `clubs`, `diamonds`), and `artUrl`. The `art` integer (0–3) selects one of the original vector demo illustrations. Artwork takes precedence over playing-card styling. A deck may contain 1–5,000 definitions. Custom card names and URLs are escaped before inclusion in SVG.
+Cards need a unique `id` and `name`. Optional fields are `rank`, `suit` (`spades`, `hearts`, `clubs`, `diamonds`), and `artUrl`. Add `artMode: "full-card"` for an uncropped, proportionally fitted full card scan; the default `"illustration"` treatment uses the existing frame and name. The `art` integer (0–3) selects one of the original vector demo illustrations. Artwork takes precedence over playing-card styling. A deck may contain 1–5,000 definitions. Custom card names and URLs are escaped before inclusion in SVG.
 
 Artwork can use HTTP(S) URLs or base64 PNG/JPEG/WebP/GIF/AVIF data URLs. Uploaded images are stored as data URLs in the deck (5 MB per upload). A remote image may display in the preview but still disallow export through CORS. Portable SVG/PNG export fetches and embeds visible art, verifies each image can be decoded, omits credentials, and limits fetch concurrency to four. If a host blocks embedding or an image is unreadable, the export reports an error; upload a valid image or use a CORS-enabled host. Broken preview art reveals the demo placeholder underneath. Artwork that is currently face down isn't fetched for export. Avoid large uploaded decks if you rely on browser local storage; JSON backup is available even when storage is full.
 
@@ -311,6 +317,9 @@ Scryfall faces render as full, proportionally scaled card images, including thei
 | --- | --- |
 | `js/engine.js` | State schema, validation, deck definitions, seeded card resolution, commands, snapshots, history |
 | `js/perspective.js` | Audience rules, player-image configurations, batch requests, and unique filenames |
+| `js/extras.js` | Named counters, number formatting, glow/focus catalogs, targets, and annotation validation |
+| `js/library.js` | Game/effect fixture catalog; the build exports each fixture as public JSON |
+| `js/studio-extras.js` | Extras controls, counter editor, and example gallery |
 | `js/layout.js` | Stage geometry, player/zone panels, card placement and overflow bounds |
 | `js/scryfall.js` | ID resolution, throttled requests, three-day metadata/art cache, IndexedDB adapter |
 | `scryfall-cache.mjs` | Persistent Node disk cache, shared by the CLI and Node API |
@@ -347,7 +356,8 @@ Call `engine.dispatch({ type, payload })`. All commands return a new snapshot an
 | `stage.update` | Any stage fields |
 | `view.update` | Any view fields |
 | `player.count` | `{ count }` |
-| `player.update` | `{ playerId, name?, color?, stats? }` |
+| `player.update` | `{ playerId, name?, color?, stats?, counters? }` (counters replaces the full list) |
+| `extras.update` | `{ highlights?, focus?, cards? }` (each supplied list replaces that list; `focus: null` clears focus) |
 | `zone.update` | `{ playerId, zoneId, name?, count?, layout?, faceDown?, visibility?, cardIds? }` |
 | `zone.add` | `{ playerId, id, name, count?, layout? }` |
 | `zone.remove` | `{ playerId, zoneId }` |

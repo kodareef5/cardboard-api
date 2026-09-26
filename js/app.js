@@ -275,8 +275,6 @@
       .join('');
     setValue('player-name', player.name);
     setValue('player-color', player.color);
-    setValue('player-life', player.stats.life);
-    setValue('player-score', player.stats.score);
     const library = player.zones.find((z) => z.id === 'library'),
       hand = player.zones.find((z) => z.id === 'hand');
     $('draw-card').disabled = !library?.count || !hand || hand.count >= T.limits.maxCards;
@@ -303,7 +301,7 @@
       hidden: 'All player images conceal these faces. Zone counts remain visible.',
     }[zone.visibility];
     $('delete-zone').disabled = player.zones.length <= 1;
-    $('add-zone').disabled = player.zones.length >= 8;
+    $('add-zone').disabled = player.zones.length >= T.limits.maxZones;
     $$('[data-card-count]').forEach((button) => {
       const active = Number(button.dataset.cardCount) === zone.count;
       button.classList.toggle('active', active);
@@ -328,7 +326,7 @@
       button.classList.toggle('active', active);
       button.setAttribute('aria-selected', active);
     });
-    ['stage', 'players', 'zones'].forEach((name) => {
+    ['stage', 'players', 'zones', 'extras'].forEach((name) => {
       $(`controls-${name}`).hidden = name !== tab;
     });
   }
@@ -578,12 +576,6 @@
       playerId: engine.state.view.playerId,
       color: event.target.value,
     });
-  for (const stat of ['life', 'score'])
-    $(`player-${stat}`).onchange = (event) =>
-      dispatch('player.update', {
-        playerId: engine.state.view.playerId,
-        stats: { [stat]: Number(event.target.value) },
-      });
   $('draw-card').onclick = () => {
     const id = engine.state.view.playerId;
     if (
@@ -755,6 +747,7 @@
     setValue('edit-card-rank', editingCard?.rank || '');
     setValue('edit-card-suit', editingCard?.suit || '');
     setValue('edit-card-art', uploadedArt ? '' : editingCard?.artUrl || '');
+    setValue('edit-card-art-mode', editingCard?.artMode || 'illustration');
     $('edit-card-art').placeholder = uploadedArt
       ? 'Uploaded image attached'
       : 'https://…/artwork.jpg';
@@ -781,6 +774,7 @@
     };
     if ($('edit-card-source').value === 'scryfall') {
       delete card.artUrl;
+      delete card.artMode;
       delete card.art;
       delete card.suit;
       delete card.rank;
@@ -790,6 +784,8 @@
     } else {
       delete card.scryfallId;
       delete card.face;
+      if (card.artUrl) card.artMode = $('edit-card-art-mode').value;
+      else delete card.artMode;
     }
     return card;
   }
@@ -866,6 +862,7 @@
     $('art-upload-label').textContent = 'Or upload an image';
     updateCardPreview();
   };
+  $('edit-card-art-mode').onchange = updateCardPreview;
   $('clear-card-art').onclick = () => {
     uploadedArt = null;
     $('edit-card-art').value = '';
@@ -1107,8 +1104,10 @@
       ['ArrowLeft', 'ArrowRight'].includes(event.key)
     ) {
       event.preventDefault();
-      const tabs = ['stage', 'players', 'zones'];
-      const index = (tabs.indexOf(controlTab) + (event.key === 'ArrowRight' ? 1 : 2)) % 3;
+      const tabs = ['stage', 'players', 'zones', 'extras'];
+      const index =
+        (tabs.indexOf(controlTab) + (event.key === 'ArrowRight' ? 1 : tabs.length - 1)) %
+        tabs.length;
       showControl(tabs[index]);
       document.querySelector(`[data-control-tab="${tabs[index]}"]`).focus();
     }
@@ -1141,6 +1140,7 @@
       /* The save indicator already explains unavailable storage. */
     }
   });
+  T.initExtrasUI({ engine, dispatch, toast, showPage, showControl });
   new ResizeObserver(() => fitStage()).observe($('canvas-wrap'));
   renderStage(engine.state);
   syncControls(engine.state);

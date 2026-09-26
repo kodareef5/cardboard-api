@@ -35,6 +35,7 @@ In browser automation, await `Tabletop.viewer.ready` after navigation. It reject
 ## Rendering choices
 
 - Dimensions: 64-4096 pixels per side; 1-8 players. Theme, density, stats, zoom, and zone focus are configurable.
+- Extras: reusable glows, single-card focus layouts, and per-position card annotations. Player `counters` are `{name, count}` lists; exact is the default, with compact/capped/scientific options. Use `"infinity"` or decimal strings for huge integers. Read the extras guide for shapes and targeting.
 - Player images: `playerScope: 'table'` shows public boards plus that player's hand; `'self'` shows only their zones. `viewerId` identifies the recipient.
 - Exact cards: provide deck definitions and zone `cardIds`/`count`. Unassigned positions use seeded sample cards.
 - MTG: supply a Scryfall printing ID in `scryfallId`; assets have a three-day browser cache. Custom cards accept `artUrl`; remote hosts must allow CORS for export.
@@ -43,6 +44,8 @@ In browser automation, await `Tabletop.viewer.ready` after navigation. It reject
 ## Docs and examples
 
 - [Full API and configuration](https://cardboard-api.pages.dev/README.md): schema, custom cards, focus, exports, and JavaScript integration.
+- [Extras and game examples](https://cardboard-api.pages.dev/EXTRAS.md): highlights, featured cards, named counters, and MTG/Pokémon/Yu-Gi-Oh!/poker coverage.
+- [Scene library index](https://cardboard-api.pages.dev/examples/index.json): small catalog linking to individual JSON fixtures.
 - [Player view JSON](https://cardboard-api.pages.dev/examples/player-view.json)
 - [Focused hand JSON](https://cardboard-api.pages.dev/examples/focused-hand.json)
 - [Scryfall scene JSON](https://cardboard-api.pages.dev/examples/scryfall-scene.json)

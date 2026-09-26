@@ -37,7 +37,10 @@ test('invalid commands are atomic and do not enter history or emit events', () =
     { type: 'player.count', payload: { count: 9 } },
     { type: 'zone.update', payload: { playerId: 'p1', zoneId: 'hand', count: -1 } },
     { type: 'zone.update', payload: { playerId: 'p1', zoneId: 'hand', count: 1.5 } },
-    { type: 'zone.update', payload: { playerId: 'p1', zoneId: 'hand', cardIds: ['missing-card'] } },
+    {
+      type: 'zone.update',
+      payload: { playerId: 'p1', zoneId: 'hand', cardIds: ['missing-card'] },
+    },
     { type: 'unknown.command' },
   ];
   commands.forEach((command) => {
@@ -93,9 +96,13 @@ test('a transfer preserves the identity and order of moved cards, remaining card
       count: 4,
     },
   });
-  assert.deepEqual(cardsIn(engine.state, 'p2', 'graveyard', 4), [...source.slice(0, 3), target[0]]);
+  assert.deepEqual(cardsIn(engine.state, 'p2', 'graveyard', 4), [
+    ...source.slice(0, 3),
+    target[0],
+  ]);
   assert.deepEqual(cardsIn(engine.state, 'p1', 'hand', 4), target.slice(1));
-  const total = (state) => state.players.flatMap((p) => p.zones).reduce((n, z) => n + z.count, 0);
+  const total = (state) =>
+    state.players.flatMap((p) => p.zones).reduce((n, z) => n + z.count, 0);
   assert.equal(total(engine.state), total(original));
   engine.undo();
   engine.undo();
@@ -140,7 +147,10 @@ test('removing players and zones repairs focus, and the final zone cannot be rem
   assert.equal(engine.state.view.zoneId, 'battlefield');
   assert.throws(
     () =>
-      engine.dispatch({ type: 'zone.remove', payload: { playerId: 'p1', zoneId: 'battlefield' } }),
+      engine.dispatch({
+        type: 'zone.remove',
+        payload: { playerId: 'p1', zoneId: 'battlefield' },
+      }),
     /at least one/,
   );
   assert.equal(engine.state.players[0].zones.length, 1);
@@ -159,7 +169,9 @@ test('deck editing is validated; switching decks clears explicit references; edi
   assert.equal(getZone(engine.state, 'p1', 'hand').zone.cardIds.length, 0);
   engine.dispatch({
     type: 'card.upsert',
-    payload: { card: { id: 'special', name: 'New card', artUrl: 'https://example.com/card.png' } },
+    payload: {
+      card: { id: 'special', name: 'New card', artUrl: 'https://example.com/card.png' },
+    },
   });
   const config = T.toConfig(engine.state);
   assert.equal(config.decks.length, 1);
@@ -213,7 +225,11 @@ test('SVG escapes imported content and rejects unsafe artwork protocols', () => 
         id: 'custom',
         name: '<script>alert(1)</script>',
         cards: [
-          { id: 'quote', name: '<img onerror="bad">', artUrl: 'https://example.com/a.png?x="&y=2' },
+          {
+            id: 'quote',
+            name: '<img onerror="bad">',
+            artUrl: 'https://example.com/a.png?x="&y=2',
+          },
         ],
       },
     ],
@@ -266,7 +282,7 @@ test('focused layouts and custom zones keep valid geometry with overflow', () =>
     setup: 'commander',
     view: { mode: 'focus', playerId: 'p1', zoneId: 'command' },
   });
-  for (let i = 1; i <= 3; i++)
+  for (let i = 1; i <= T.limits.maxZones - 5; i++)
     engine.dispatch({
       type: 'zone.add',
       payload: { playerId: 'p1', id: `extra-${i}`, name: `Extra ${i}` },

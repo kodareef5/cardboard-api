@@ -61,6 +61,8 @@
         text(35, 61, 'Loading card…', 6, '#594c3c', 'text-anchor="middle"')
       );
     }
+    if (card.artUrl && card.artMode === 'full-card')
+      return `<title>${esc(card.name)}</title><image href="${esc(card.artUrl)}" width="70" height="100" preserveAspectRatio="xMidYMid meet"/>`;
     if (card.artUrl || card.art !== undefined || !card.suit) {
       out += artMarkup(card.art ?? 0);
       if (card.artUrl)
@@ -103,6 +105,260 @@
       });
     }
     return out;
+  }
+  function fittedText(x, y, value, size, width, fill, extra = '') {
+    const characters = Array.from(String(value));
+    const spacing = Number(extra.match(/letter-spacing="([\d.]+)"/)?.[1] || 0);
+    const estimate =
+      characters.reduce(
+        (sum, character) =>
+          sum +
+          (/[MW@#%&]/.test(character)
+            ? 1
+            : /[il .,:;'!]/.test(character)
+              ? 0.35
+              : /[\x20-\x7e]/.test(character)
+                ? 0.75
+                : 1),
+        0,
+      ) *
+        size +
+      characters.length * spacing;
+    const fit =
+      estimate > width
+        ? ` textLength="${num(Math.max(1, width))}" lengthAdjust="spacingAndGlyphs"`
+        : '';
+    return text(x, y, value, size, fill, extra + fit);
+  }
+  function counterChip(counter, view, theme, x, y, w, h = 34) {
+    const value = T.formatCounter(counter.count, T.counterOptions(counter, view));
+    const exact = T.formatCounter(counter.count);
+    const ink = counter.color || theme.accent;
+    return (
+      `<g data-counter="${esc(counter.id || counter.name)}" data-counter-value="${esc(counter.count)}"><title>${esc(`${counter.name}: ${exact}`)}</title><rect x="${num(x)}" y="${num(y)}" width="${num(w)}" height="${h}" rx="5" fill="${ink}" fill-opacity=".065"/>` +
+      fittedText(
+        x + 8,
+        y + 10,
+        counter.name.toUpperCase(),
+        7,
+        w - 16,
+        theme.muted,
+        'letter-spacing=".7"',
+      ) +
+      fittedText(x + 8, y + h - 5, value, 16, w - 16, ink, 'font-weight="600"') +
+      '</g>'
+    );
+  }
+  function glowSVG(glow, id) {
+    if (!glow) return '';
+    const effect = T.glowEffect(glow.preset),
+      color = glow.color || effect.color,
+      strength = glow.strength ?? 1;
+    const filter = `glow-${id}`;
+    let accents = '';
+    if (glow.preset === 'arcane')
+      accents = '<path d="M0 6l-5-6 5-6 5 6ZM70 94l-5 6 5 6 5-6Z"/>';
+    if (glow.preset === 'ember')
+      accents = '<path d="M-3 17V-3h20M53 103h20V83" stroke-width="2.2"/>';
+    if (glow.preset === 'frost')
+      accents =
+        '<path d="M-5 7h14M2 0v14M63 93h14M70 86v14M-1 2l7 10M66 88l8 10" stroke-width=".7"/>';
+    if (glow.preset === 'neon')
+      accents = '<rect x="-4" y="-4" width="78" height="108" rx="9" stroke-width=".65"/>';
+    return `<g data-glow="${glow.preset}" pointer-events="none"><defs><filter id="${filter}" x="-70%" y="-50%" width="240%" height="200%" color-interpolation-filters="sRGB"><feGaussianBlur stdDeviation="${num(effect.blur * strength)}"/><feMerge><feMergeNode/><feMergeNode in="SourceGraphic"/></feMerge></filter></defs><rect x="-1.5" y="-1.5" width="73" height="103" rx="7" fill="none" stroke="${color}" stroke-width="${num(effect.line * strength + 1)}" opacity=".9" filter="url(#${filter})"/><g fill="none" stroke="${color}" stroke-width="1.2">${accents}</g></g>`;
+  }
+  function decoratedCard(
+    state,
+    definition,
+    annotation,
+    concealed,
+    id,
+    assets,
+    glow,
+    details = true,
+  ) {
+    const theme = T.themes[state.stage.theme];
+    const angle = annotation.rotation ?? (annotation.tapped ? 90 : 0);
+    const radians = (angle * Math.PI) / 180;
+    const fit = Math.min(
+      1,
+      70 / (70 * Math.abs(Math.cos(radians)) + 100 * Math.abs(Math.sin(radians))),
+      100 / (100 * Math.abs(Math.cos(radians)) + 70 * Math.abs(Math.sin(radians))),
+    );
+    let out = `<g data-card-state="${concealed ? 'concealed' : 'visible'}" transform="translate(35 50) scale(${num(fit)}) rotate(${angle}) translate(-35 -50)">${glowSVG(glow, id)}<g filter="url(#${id === 'featured-card' ? 'focus-shadow' : 'card-shadow'})">${faceMarkup(definition, theme, concealed, id, assets)}</g></g>`;
+    if (concealed || !details) return out;
+    const counters = annotation.counters || [];
+    const badges = counters
+      .slice(0, 2)
+      .map((c) => `${c.name} ${T.formatCounter(c.count, T.counterOptions(c, state.view))}`);
+    if (counters.length > 2) badges.push(`+${counters.length - 2} counters`);
+    if (annotation.tags?.length) badges.push(annotation.tags.join(' · '));
+    badges.slice(0, 3).forEach((label, index) => {
+      out +=
+        `<g><title>${esc(label)}</title><rect x="-3" y="${4 + index * 11}" width="76" height="10" rx="3" fill="${theme.background}" stroke="${theme.accent}" stroke-width=".4"/>` +
+        fittedText(1, 11 + index * 11, label, 5.3, 68, theme.ink) +
+        '</g>';
+    });
+    if (annotation.badge)
+      out +=
+        `<rect x="27" y="84" width="44" height="12" rx="4" fill="${theme.background}" stroke="${theme.accent}" stroke-width=".5"/>` +
+        fittedText(31, 92.5, annotation.badge, 7, 35, theme.ink, 'font-weight="600"');
+    return out;
+  }
+  function composeFocus(result, state, { assets } = {}) {
+    const focus = state.extras.focus;
+    if (!focus) return result;
+    const player = state.players.find((p) => p.id === focus.target.playerId);
+    if (
+      state.view.viewerId &&
+      state.view.playerScope === 'self' &&
+      state.view.viewerId !== player.id
+    )
+      return result;
+    const zone = player.zones.find((z) => z.id === focus.target.zoneId);
+    const annotation = T.annotationAt(state, player, zone, focus.target.index);
+    const concealed = !T.canSeeFaces(state, player, zone) || annotation.faceDown === true;
+    const definition = concealed ? null : T.cardAt(state, player, zone, focus.target.index);
+    const requested = new Map(
+      (result.assets || []).map((card) => [T.scryfallAssetKey(card), card]),
+    );
+    if (definition?.scryfallId) requested.set(T.scryfallAssetKey(definition), definition);
+    const asset =
+      definition?.scryfallId &&
+      (assets?.get(T.scryfallAssetKey(definition)) || T.scryfall?.peek(definition));
+    const title = concealed ? 'Concealed card' : focus.title || asset?.name || definition.name;
+    const caption = concealed
+      ? `${player.name} · ${zone.name}`
+      : focus.caption || `${player.name} · ${zone.name} · Card ${focus.target.index + 1}`;
+    const { width: W, height: H } = T.layout.stageSize(state.stage),
+      theme = T.themes[state.stage.theme];
+    const area = { x: 48, y: 145, w: W - 96, h: H - 215 };
+    let scene = { x: 0, y: 0, w: W, h: H },
+      card,
+      info;
+    const stack = W / H < 0.8;
+    if (focus.layout === 'sidecar') {
+      scene = stack
+        ? { x: 48, y: 140, w: W - 96, h: area.h * 0.34 }
+        : { x: 32, y: 140, w: (W - 96) * 0.54, h: area.h };
+      const region = stack
+        ? { x: 48, y: scene.y + scene.h + 24, w: area.w, h: area.h - scene.h - 24 }
+        : { x: scene.x + scene.w + 36, y: 158, w: W - scene.x - scene.w - 100, h: area.h - 20 };
+      const cw = Math.min(region.w * 0.83, (region.h - 160) * 0.7);
+      card = {
+        x: region.x + (region.w - cw) / 2,
+        y: region.y + 10,
+        w: Math.max(35, cw),
+        h: Math.max(50, cw / 0.7),
+      };
+      info = {
+        x: region.x,
+        y: card.y + card.h + 24,
+        w: region.w,
+        h: H - 60 - card.y - card.h - 24,
+      };
+    } else if (focus.layout === 'showcase' && !stack) {
+      const cw = Math.min(area.w * 0.41, (area.h - 90) * 0.7);
+      card = { x: area.x + 34, y: area.y + (area.h - cw / 0.7) / 2, w: cw, h: cw / 0.7 };
+      info = {
+        x: area.x + area.w * 0.51,
+        y: area.y + Math.max(45, area.h * 0.15),
+        w: area.w * 0.44,
+        h: area.h * 0.72,
+      };
+    } else {
+      const cw = Math.min(area.w * 0.62, (area.h - 200) * 0.7);
+      card = { x: (W - cw) / 2, y: area.y + 10, w: cw, h: cw / 0.7 };
+      info = {
+        x: W * 0.19,
+        y: card.y + card.h + 26,
+        w: W * 0.62,
+        h: H - 60 - card.y - card.h - 26,
+      };
+    }
+    // Nest the existing scene unchanged: focus is a presentation layer over any registered scene.
+    const base = result.svg.replace(/<svg\b[^>]*>/, (tag) => {
+      let root = tag.replace(/\s(?:x|y|width|height)="[^"]*"/g, '');
+      return (
+        root.slice(0, -1) +
+        ` x="${num(scene.x)}" y="${num(scene.y)}" width="${num(scene.w)}" height="${num(scene.h)}">`
+      );
+    });
+    let out = `<svg xmlns="http://www.w3.org/2000/svg" width="${state.stage.width}" height="${state.stage.height}" viewBox="0 0 ${W} ${H}" role="img" aria-label="${esc(title)}"><defs><filter id="focus-shadow" x="-40%" y="-30%" width="180%" height="180%"><feDropShadow dx="0" dy="3" stdDeviation="2.5" flood-opacity=".25"/></filter></defs><rect width="${W}" height="${H}" fill="${theme.background}"/><g data-base-scene="true">${base}</g>`;
+    if (focus.layout !== 'sidecar')
+      out += `<rect width="${W}" height="${H}" fill="${theme.background}" opacity="${focus.dim ?? 0.7}"/>`;
+    if (focus.layout === 'showcase')
+      out += `<rect x="${area.x}" y="${area.y}" width="${area.w}" height="${area.h}" rx="22" fill="${theme.surface}" fill-opacity=".92" stroke="${theme.accent}" stroke-opacity=".25"/>`;
+    out += `<rect width="${W}" height="126" fill="${theme.background}"/>`;
+    out += `<g data-card-focus="${focus.layout}" data-focus-visibility="${concealed ? 'backs' : 'faces'}" font-family="Arial,Helvetica,sans-serif">`;
+    out += text(52, 70, 'CARD STUDY', 14, theme.accent, 'font-weight="600" letter-spacing="3"');
+    out += fittedText(52, 99, `${player.name} · ${zone.name}`, 15, W - 120, theme.muted);
+    const glow = focus.preset
+      ? focus
+      : T.highlightAt(state, player, zone, focus.target.index, definition);
+    out += `<g transform="translate(${num(card.x)} ${num(card.y)}) scale(${num(card.w / 70)})">${decoratedCard(state, definition, { ...annotation, rotation: 0, tapped: false }, concealed, 'featured-card', assets, glow, false)}</g>`;
+    out += `<g data-focus-info="true"><title>${esc(title + ' · ' + caption)}</title>`;
+    out += fittedText(info.x, info.y + 22, title, 24, info.w, theme.ink, 'font-weight="600"');
+    out += fittedText(info.x, info.y + 46, caption, 12, info.w, theme.muted);
+    let offset = 62;
+    if (!concealed) {
+      const tags = [
+        ...(annotation.tags || []),
+        ...(annotation.badge ? [annotation.badge] : []),
+        ...(annotation.tapped ? ['Tapped / turned'] : []),
+      ];
+      if (tags.length) {
+        out += fittedText(info.x, info.y + offset, tags.join(' · '), 11, info.w, theme.accent);
+        offset += 16;
+      }
+      const counters = annotation.counters || [];
+      const columns = Math.max(1, Math.min(3, Math.floor(info.w / 135)));
+      const rows = Math.max(0, Math.floor((info.h - offset) / 40));
+      const capacity = columns * rows,
+        shown = Math.min(
+          counters.length,
+          counters.length > capacity ? Math.max(0, capacity - 1) : capacity,
+        );
+      counters.slice(0, shown).forEach((counter, i) => {
+        out += counterChip(
+          counter,
+          state.view,
+          theme,
+          info.x + ((i % columns) * info.w) / columns,
+          info.y + offset + Math.floor(i / columns) * 40,
+          info.w / columns - 6,
+          36,
+        );
+      });
+      if (shown < counters.length)
+        out +=
+          `<g><title>${esc(
+            counters
+              .slice(shown)
+              .map((c) => `${c.name}: ${T.formatCounter(c.count)}`)
+              .join(' · '),
+          )}</title>` +
+          text(
+            info.x,
+            Math.min(H - 36, info.y + offset + Math.floor(shown / columns) * 40 + 20),
+            `+${counters.length - shown} counters · use Showcase for detail`,
+            10,
+            theme.muted,
+          ) +
+          '</g>';
+    }
+    out += '</g></g></svg>';
+    return {
+      ...result,
+      svg: out,
+      assets: [...requested.values()],
+      metrics: {
+        ...result.metrics,
+        renderedCards: result.metrics.renderedCards + 1,
+        focusedCard: { ...focus.target },
+        focusLayout: focus.layout,
+      },
+    };
   }
   function cardSVG(
     card,
@@ -153,36 +409,84 @@
     );
     out += `<line x1="48" y1="121" x2="${W - 48}" y2="121" stroke="${theme.border}" stroke-opacity=".65"/>`;
 
-    function playerHeader(panel, player, focus = false) {
+    function playerHeader(panel, player) {
       const { x, y, w } = panel;
-      let result = `<circle cx="${x + 26}" cy="${y + 24}" r="10" fill="${player.color}" fill-opacity=".2"/><circle cx="${x + 26}" cy="${y + 24}" r="3.7" fill="${player.color}"/>`;
-      const nameMax = Math.max(
-        6,
-        Math.floor(
-          (w - (state.view.stats === 'hidden' ? 65 : state.view.stats === 'full' ? 195 : 125)) /
-            9,
-        ),
-      );
-      result += text(
+      const counters = T.counterLayout(player, state.view, w, panel.h ?? H - 350);
+      panel.header = counters.height;
+      let result = `<g>${
+        state.view.stats === 'hidden'
+          ? ''
+          : `<title>${esc(
+              T.playerCounters(player)
+                .map((c) => `${c.name}: ${T.formatCounter(c.count)}`)
+                .join(' · '),
+            )}</title>`
+      }<circle cx="${x + 26}" cy="${y + 24}" r="10" fill="${player.color}" fill-opacity=".2"/><circle cx="${x + 26}" cy="${y + 24}" r="3.7" fill="${player.color}"/>`;
+      if (counters.inline) {
+        const cw = Math.min(160, w * 0.41);
+        result += fittedText(
+          x + 45,
+          y + 29,
+          player.name,
+          15,
+          w - cw - 66,
+          theme.ink,
+          'font-weight="600"',
+        );
+        const counter = { ...counters.items[0] };
+        if (counters.hidden) counter.name += ` · +${counters.hidden} more`;
+        result += counterChip(counter, state.view, theme, x + w - cw - 12, y + 7, cw, 32);
+        return result + '</g>';
+      }
+      result += fittedText(
         x + 45,
         y + 29,
-        short(player.name, nameMax),
+        player.name,
         15,
+        w - (counters.overflowInline ? 135 : 65),
         theme.ink,
         'font-weight="600"',
       );
-      if (state.view.stats !== 'hidden') {
-        const stats = Object.entries(player.stats);
-        const value =
-          state.view.stats === 'compact'
-            ? `${stats[0]?.[0] === 'life' ? '♥ ' : (stats[0]?.[0] || '') + ' '}${stats[0]?.[1] ?? 0}`
-            : stats
-                .slice(0, focus ? 6 : 2)
-                .map(([key, val]) => `${short(key, 9)} ${val}`)
-                .join('   ·   ');
-        result += text(x + w - 18, y + 29, value, 13, theme.accent, 'text-anchor="end"');
+      if (counters.overflowInline)
+        result += text(
+          x + w - 14,
+          y + 29,
+          `+${counters.hidden} more`,
+          10,
+          theme.muted,
+          'text-anchor="end"',
+        );
+      const cw = (w - 28) / counters.columns;
+      counters.items.forEach((counter, i) => {
+        result += counterChip(
+          counter,
+          state.view,
+          theme,
+          x + 14 + (i % counters.columns) * cw,
+          y + 37 + Math.floor(i / counters.columns) * 34,
+          cw - 5,
+          31,
+        );
+      });
+      if (counters.hidden && !counters.overflowInline) {
+        const i = counters.items.length;
+        result +=
+          `<g data-counter-overflow="${counters.hidden}"><title>${esc(
+            T.playerCounters(player)
+              .slice(i)
+              .map((c) => `${c.name}: ${T.formatCounter(c.count)}`)
+              .join(' · '),
+          )}</title>` +
+          text(
+            x + 22 + (i % counters.columns) * cw,
+            y + 58 + Math.floor(i / counters.columns) * 34,
+            `+${counters.hidden} counters`,
+            11,
+            theme.muted,
+          ) +
+          '</g>';
       }
-      return result;
+      return result + '</g>';
     }
     function drawZone(player, z, rect, focus = false, largeCards = false) {
       const { x, y, w, h } = rect;
@@ -247,12 +551,39 @@
           );
       }
       const layout = T.layout.cardsInZone(content, z, state.view.density, focus || largeCards);
+      // Explicit position highlights in a grid/fan remain visible even beyond the sample cap.
+      if (z.layout !== 'stack') {
+        const requested = [
+          ...new Set(
+            state.extras.highlights
+              .filter(
+                (rule) =>
+                  rule.target.playerId === player.id &&
+                  rule.target.zoneId === z.id &&
+                  rule.target.index !== undefined,
+              )
+              .map((rule) => rule.target.index),
+          ),
+        ];
+        const missing = requested.filter(
+          (index) => !layout.cards.some((card) => card.index === index),
+        );
+        const replaceable = layout.cards
+          .filter((card) => !requested.includes(card.index))
+          .reverse();
+        missing.slice(0, replaceable.length).forEach((index, i) => {
+          replaceable[i].index = index;
+        });
+      }
       layout.cards.forEach((card) => {
-        const definition = faceDown ? null : T.cardAt(state, player, z, card.index);
+        const annotation = T.annotationAt(state, player, z, card.index);
+        const concealed = faceDown || annotation.faceDown === true;
+        const definition = concealed ? null : T.cardAt(state, player, z, card.index);
         if (definition?.scryfallId)
           requestedAssets.set(T.scryfallAssetKey(definition), definition);
+        const glow = T.highlightAt(state, player, z, card.index, definition);
         const id = `art-${renderedCards++}`;
-        result += `<g transform="translate(${num(card.x)} ${num(card.y)}) rotate(${num(card.angle)} ${num(card.w / 2)} ${num(card.h * 0.9)})"><g transform="scale(${num(card.w / 70)})" filter="url(#card-shadow)">${faceMarkup(definition, theme, faceDown, id, assets)}</g></g>`;
+        result += `<g data-card-index="${card.index}"${definition ? ` data-card-id="${esc(definition.id)}"` : ''} transform="translate(${num(card.x)} ${num(card.y)}) rotate(${num(card.angle)} ${num(card.w / 2)} ${num(card.h * 0.9)})"><g transform="scale(${num(card.w / 70)})">${decoratedCard(state, definition, annotation, concealed, id, assets, glow)}</g></g>`;
       });
       visibleCount += z.count;
       if (layout.hidden && z.layout !== 'stack') {
@@ -306,8 +637,15 @@
     } else {
       const player = state.players.find((p) => p.id === state.view.playerId),
         z = player.zones.find((z) => z.id === state.view.zoneId);
-      out += playerHeader({ x: 48, y: 142, w: W - 96 }, player, true);
-      out += drawZone(player, z, { x: 48, y: 204, w: W - 96, h: H - 386 }, true);
+      const header = { x: 48, y: 142, w: W - 96, h: H - 350 };
+      out += playerHeader(header, player);
+      const zoneY = 142 + header.header + 12;
+      out += drawZone(
+        player,
+        z,
+        { x: 48, y: zoneY, w: W - 96, h: Math.max(20, H - 182 - zoneY) },
+        true,
+      );
       const gap = 12,
         otherZones = player.zones.filter((item) => item.id !== z.id);
       const zw = (W - 96 - gap * (otherZones.length - 1)) / Math.max(1, otherZones.length);
@@ -353,7 +691,7 @@
     const state = T.normalize(config),
       renderer = scenes.get(state.scene);
     if (!renderer) throw new Error(`Scene "${state.scene}" is not registered.`);
-    return renderer(state, options);
+    return composeFocus(renderer(state, options), state, options);
   }
   async function renderDetailedAsync(config = {}, options = {}) {
     const state = T.normalize(config);

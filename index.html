@@ -16,6 +16,7 @@
     />
     <link rel="stylesheet" href="styles.css" />
     <script defer src="js/engine.js"></script>
+    <script defer src="js/extras.js"></script>
     <script defer src="js/perspective.js"></script>
     <script defer src="js/layout.js"></script>
     <script defer src="js/scryfall.js"></script>
@@ -23,6 +24,8 @@
     <script defer src="js/archive.js"></script>
     <script defer src="js/export.js"></script>
     <script defer src="js/url.js"></script>
+    <script defer src="js/library.js"></script>
+    <script defer src="js/studio-extras.js"></script>
     <script defer src="js/app.js"></script>
   </head>
   <body>
@@ -172,7 +175,8 @@
             <button class="active" data-control-tab="stage" role="tab" aria-selected="true">
               Stage</button
             ><button data-control-tab="players" role="tab" aria-selected="false">Players</button
-            ><button data-control-tab="zones" role="tab" aria-selected="false">Zones</button>
+            ><button data-control-tab="zones" role="tab" aria-selected="false">Zones</button
+            ><button data-control-tab="extras" role="tab" aria-selected="false">Extras</button>
           </div>
           <div class="control-scroll">
             <div id="controls-stage" class="control-view">
@@ -344,10 +348,7 @@
                 <label class="field"
                   >Display name<input id="player-name" maxlength="40" type="text"
                 /></label>
-                <div class="two-fields">
-                  <label class="field">Life<input id="player-life" type="number" /></label
-                  ><label class="field">Score<input id="player-score" type="number" /></label>
-                </div>
+                <div id="player-counters"></div>
                 <button class="button full-width" id="draw-card">
                   <svg class="icon"><use href="#i-cards" /></svg>Draw a card
                 </button>
@@ -874,6 +875,12 @@
                 placeholder="The Wanderer"
             /></label>
             <div id="custom-card-fields">
+              <label class="field"
+                >Image treatment<select id="edit-card-art-mode">
+                  <option value="illustration">Illustration with a name</option>
+                  <option value="full-card">Full card scan · preserve all edges</option>
+                </select></label
+              >
               <div class="two-fields">
                 <label class="field"
                   >Rank <span class="optional">optional</span
