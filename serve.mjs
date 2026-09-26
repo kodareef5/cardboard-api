@@ -15,6 +15,7 @@ const types = {
   '.json': 'application/json',
   '.svg': 'image/svg+xml',
   '.md': 'text/plain',
+  '.txt': 'text/plain',
 };
 const server = createServer(async (request, response) => {
   if (!['GET', 'HEAD'].includes(request.method)) {
@@ -23,7 +24,8 @@ const server = createServer(async (request, response) => {
     return;
   }
   try {
-    const pathname = decodeURIComponent(new URL(request.url, 'http://localhost').pathname);
+    let pathname = decodeURIComponent(new URL(request.url, 'http://localhost').pathname);
+    if (pathname === '/llms.txt') pathname = '/llm.txt';
     let path = resolve(root, `.${pathname}`);
     if (!path.startsWith(root.endsWith(sep) ? root : root + sep) && path !== resolve(root)) {
       response.writeHead(403);

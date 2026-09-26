@@ -14,7 +14,10 @@ for (const asset of [
   'js',
   'examples',
   'README.md',
+  'llm.txt',
 ]) {
   await cp(new URL(asset, root), new URL(asset, output), { recursive: true });
 }
+// Keep both agent-guide URLs identical, with one source to maintain.
+await cp(new URL('llm.txt', root), new URL('llms.txt', output));
 console.log(`Static site ready: ${fileURLToPath(output)}`);

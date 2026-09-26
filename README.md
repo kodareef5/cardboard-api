@@ -1,5 +1,7 @@
 # Cardboard API
 
+For agents: start with [llm.txt](https://cardboard-api.pages.dev/llm.txt) for the short contract, readable request example, and documentation links. The same guide is available at `/llms.txt`.
+
 A stateless renderer with a static HTML playground. An external application supplies a scene request; the browser lays it out, loads card artwork, and can export a PNG or SVG. Game state, identity, permissions, and rules belong to the caller. No runtime dependencies, application server, database, or account system are required. Optional Scryfall cards load directly from Scryfall with a three-day browser cache.
 
 Open **index.html** directly, or run **`npm start`** / **`node serve.mjs`** and visit **http://127.0.0.1:8765**. An optional port can be supplied with `node serve.mjs 9000`. Serving locally is useful for browser integrations, but isn't required for the workbench. Use a current Chrome, Firefox, or Safari.

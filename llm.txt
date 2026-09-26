@@ -1,0 +1,51 @@
+# Cardboard API
+
+> Render tabletop card scenes from JSON. The browser displays the scene and can export PNG or SVG.
+
+This is a static rendering component. Your application supplies the scene and owns game state, rules, identity, and permissions. No API key, game session, or server-side image endpoint is involved.
+
+Read this text file and the linked docs for discovery. The playground changes its URL to include scene data; it is an interactive editor, not the documentation endpoint.
+
+## Make a request
+
+Use a small JSON configuration. Omitted fields receive defaults: 512 x 512, two players, standard playing cards.
+
+```js
+const request = {
+  stage: { width: 512, height: 512 },
+  players: 2,
+  view: { mode: 'player', viewerId: 'p1', playerScope: 'table' }
+};
+const url = new URL('https://cardboard-api.pages.dev/render.html');
+url.hash = new URLSearchParams({ config: JSON.stringify(request) }).toString();
+// Open url.href in a browser, or use it as an iframe src.
+```
+
+Add `?embed=1` before the fragment for a scene without controls. The URL serves HTML; JavaScript in a browser performs rendering. An HTTP fetch alone does not generate an image.
+
+In browser automation, await `Tabletop.viewer.ready` after navigation. It rejects on rendering or artwork errors. Use `await Tabletop.toPNG(Tabletop.viewer.state)` for a PNG Blob, or `await Tabletop.toSVG(Tabletop.viewer.state)` for SVG text. The page also has download buttons.
+
+## Keep requests and replies small
+
+- Generate URL encoding in code. Explain the readable JSON, not an expanded or encoded scene dump.
+- When a user needs a render link, provide one descriptive Markdown link or save it in an artifact. Do not print the raw URL as prose.
+- With the browser SDK loaded, `await Tabletop.createRenderURL(request)` produces a compressed link. There is no stored scene ID or short-link service.
+- Use artwork URLs or Scryfall IDs, not embedded image bytes. Limits: 64,000 URL characters and 1,000,000 decoded JSON bytes. For larger inputs, use the JavaScript API directly or import JSON in the playground.
+
+## Rendering choices
+
+- Dimensions: 64-4096 pixels per side; 1-8 players. Theme, density, stats, zoom, and zone focus are configurable.
+- Player images: `playerScope: 'table'` shows public boards plus that player's hand; `'self'` shows only their zones. `viewerId` identifies the recipient.
+- Exact cards: provide deck definitions and zone `cardIds`/`count`. Unassigned positions use seeded sample cards.
+- MTG: supply a Scryfall printing ID in `scryfallId`; assets have a three-day browser cache. Custom cards accept `artUrl`; remote hosts must allow CORS for export.
+- Visibility controls drawing, not access to the request. Omit private data before sharing a URL; selecting a player does not redact it.
+
+## Docs and examples
+
+- [Full API and configuration](https://cardboard-api.pages.dev/README.md): schema, custom cards, focus, exports, and JavaScript integration.
+- [Player view JSON](https://cardboard-api.pages.dev/examples/player-view.json)
+- [Focused hand JSON](https://cardboard-api.pages.dev/examples/focused-hand.json)
+- [Scryfall scene JSON](https://cardboard-api.pages.dev/examples/scryfall-scene.json)
+- [Playground](https://cardboard-api.pages.dev/): interactive testing.
+
+This same guide is also available at https://cardboard-api.pages.dev/llms.txt.
