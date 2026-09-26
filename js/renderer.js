@@ -366,6 +366,24 @@
   ) {
     return `<svg xmlns="http://www.w3.org/2000/svg" width="140" height="200" viewBox="-1 -1 72 102" role="img" aria-label="${esc(faceDown ? 'Face-down card' : card.name)}">${faceMarkup(card, T.themes[theme], faceDown, id, assets)}</svg>`;
   }
+  function avatarSVG(player = {}, { size = 512 } = {}) {
+    T.validateAvatar(player);
+    if (!Number.isInteger(size) || size < 1 || size > 4096)
+      throw new Error('Avatar size must be an integer from 1 to 4096.');
+    const name = player.name?.trim() || 'Player';
+    const words = name.split(/\s+/u);
+    const last = words[words.length - 1].replace(/^0+(?=\d)/, '');
+    const initials = Array.from(
+      (Array.from(words[0])[0] +
+        (words.length > 1 ? Array.from(last)[0] : '')).toUpperCase(),
+    ).slice(0, 2).join('');
+    const color = player.color || '#52745e';
+    const [r, g, b] = color.slice(1).match(/../g).map((value) => parseInt(value, 16));
+    const ink = r * 0.299 + g * 0.587 + b * 0.114 > 155 ? '#17382f' : '#fffdf5';
+    // The fallback sits behind the image. Nested SVG clips the centered cover crop
+    // without document-wide clip IDs, even when several previews share a page.
+    return `<svg xmlns="http://www.w3.org/2000/svg" width="${size}" height="${size}" viewBox="0 0 100 100" overflow="hidden" role="img" aria-label="${esc(`${name} avatar`)}" data-avatar="${esc(player.id || '')}"><title>${esc(`${name} avatar`)}</title><g data-avatar-fallback="initials"><rect width="100" height="100" fill="${color}"/><path d="M0 100L100 0V100Z" fill="#fff" opacity=".06"/><text x="50" y="53" text-anchor="middle" dominant-baseline="middle" font-family="Arial,Helvetica,sans-serif" font-size="${Array.from(initials).length > 1 ? 38 : 48}" font-weight="600" fill="${ink}">${esc(initials)}</text></g>${player.avatarUrl ? `<image data-avatar-image="true" href="${esc(player.avatarUrl)}" width="100" height="100" preserveAspectRatio="xMidYMid slice"/>` : ''}</svg>`;
+  }
   function renderTabletop(state, { assets } = {}) {
     const requestedAssets = new Map();
     const { width: W, height: H } = T.layout.stageSize(state.stage);
@@ -421,15 +439,15 @@
                 .map((c) => `${c.name}: ${T.formatCounter(c.count)}`)
                 .join(' · '),
             )}</title>`
-      }<circle cx="${x + 26}" cy="${y + 24}" r="10" fill="${player.color}" fill-opacity=".2"/><circle cx="${x + 26}" cy="${y + 24}" r="3.7" fill="${player.color}"/>`;
+      }<g transform="translate(${x + 12} ${y + 7})">${avatarSVG(player, { size: 28 })}</g>`;
       if (counters.inline) {
         const cw = Math.min(160, w * 0.41);
         result += fittedText(
-          x + 45,
+          x + 49,
           y + 29,
           player.name,
           15,
-          w - cw - 66,
+          w - cw - 70,
           theme.ink,
           'font-weight="600"',
         );
@@ -439,11 +457,11 @@
         return result + '</g>';
       }
       result += fittedText(
-        x + 45,
+        x + 49,
         y + 29,
         player.name,
         15,
-        w - (counters.overflowInline ? 135 : 65),
+        w - (counters.overflowInline ? 139 : 69),
         theme.ink,
         'font-weight="600"',
       );
@@ -704,6 +722,7 @@
     escape: esc,
     countLabel,
     cardSVG,
+    avatarSVG,
     renderDetailed,
     renderDetailedAsync,
     renderAsync: async (config, options) => (await renderDetailedAsync(config, options)).svg,

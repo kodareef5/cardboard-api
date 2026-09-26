@@ -348,6 +348,24 @@
                 <label class="field"
                   >Display name<input id="player-name" maxlength="40" type="text"
                 /></label>
+                <label class="field">Avatar image URL
+                  <input id="player-avatar-url" type="url" placeholder="https://…/avatar.jpg" />
+                </label>
+                <div class="player-avatar-tools">
+                  <div id="player-avatar-preview" class="player-avatar-preview" aria-label="Avatar at 64, 32, and 24 pixels"></div>
+                  <button class="text-button" id="clear-player-avatar" type="button">Use initials</button>
+                </div>
+                <p class="field-help">Any aspect ratio, cropped to a centered square. Missing or unavailable images use initials in the player's color.</p>
+                <div class="player-avatar-export">
+                  <select id="avatar-export-size" aria-label="Avatar export size">
+                    <option value="32">32 × 32</option>
+                    <option value="64">64 × 64</option>
+                    <option value="128">128 × 128</option>
+                    <option value="256">256 × 256</option>
+                    <option value="512" selected>512 × 512</option>
+                  </select>
+                  <button class="button" id="download-player-avatar" type="button">Download avatar</button>
+                </div>
                 <div id="player-counters"></div>
                 <button class="button full-width" id="draw-card">
                   <svg class="icon"><use href="#i-cards" /></svg>Draw a card

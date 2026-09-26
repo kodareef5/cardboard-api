@@ -1211,15 +1211,52 @@ svg.icon {
   border-color: #a2b395;
   background: #eff2e9;
 }
-.player-dot {
-  width: 9px;
-  height: 9px;
-  border-radius: 50%;
+.player-avatar-mini {
+  width: 28px;
+  height: 28px;
   flex-shrink: 0;
+}
+.player-list-name {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.player-avatar-tools {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+.player-avatar-preview {
+  display: flex;
+  align-items: flex-end;
+  gap: 8px;
+  flex-shrink: 0;
+}
+.player-avatar-preview svg,
+.player-avatar-mini svg {
+  display: block;
+}
+.player-avatar-export {
+  display: grid;
+  grid-template-columns: 95px minmax(0, 1fr);
+  gap: 8px;
+  margin: 14px 0 24px;
+}
+.player-avatar-export select {
+  width: 100%;
+  min-width: 0;
+  font-size: 11px;
+}
+.player-avatar-export .button {
+  padding-inline: 8px;
+  font-size: 11px;
 }
 .player-row .subtle {
   margin-left: auto;
   font-size: 9px;
+  flex-shrink: 0;
 }
 .field {
   display: flex;

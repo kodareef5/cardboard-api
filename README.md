@@ -50,7 +50,7 @@ Node scripts can import `createRenderURL` from `tabletop.mjs`; provide an absolu
 | `render.html?embed=1#scene=…` | Scene only, suitable for an iframe |
 | `index.html#page=stage&scene=…` | Editable playground request, updated as controls change |
 
-Tokens use gzip and base64url with no padding. The browser's native compression APIs provide gzip; encoding falls back to uncompressed tokens if compression is unavailable. `encodeRequest(config)` and `decodeRequest(token)` expose the codec; `readRenderURL(url)` accepts either URL form and returns a normalized request or `null` when none is supplied. Unknown versions, invalid configurations, damaged links, and failed assets produce explicit errors.
+Tokens use gzip and base64url with no padding. The browser's native compression APIs provide gzip; encoding falls back to uncompressed tokens if compression is unavailable. `encodeRequest(config)` and `decodeRequest(token)` expose the codec; `readRenderURL(url)` accepts either URL form and returns a normalized request or `null` when none is supplied. Unknown versions, invalid configurations, damaged links, and failed required card assets produce explicit errors. Unavailable player avatars use their initials fallback.
 
 The URL renderer supplies **HTML rendered in a browser**, not an HTTP response with `image/png` content. Its Download PNG and SVG buttons generate files locally. Automation can await `Tabletop.viewer.ready`, which resolves to dimensions/metrics after the current scene and artwork finish loading, or rejects on failure. It is replaced when the fragment changes. `document.body.dataset.renderStatus` is `loading`, `ready`, or `error`; a `tabletop:ready` event also fires. `Tabletop.viewer.state` is a copy of the request, suitable for `Tabletop.toPNG()` or `Tabletop.toSVG()`.
 
@@ -82,7 +82,7 @@ Both `index.html` and `render.html` are real files, so fragment URLs require no 
 ## The workbench
 
 - **Stage:** dimensions from 64–4096 px per side; square/SMS, portrait/social, and presentation presets; four themes; texture; density; stats; zone labels; and a preview-only safe-area guide. Scene zoom changes the rendered composition. Preview fitting only changes the size it is displayed on your screen.
-- **Players:** 1–8 players, names, colors, life, score, and a draw action.
+- **Players:** 1–8 players, names, colors, avatar image URLs, named counters, and a draw action. Avatars have square previews and PNG downloads from 32×32 to 512×512.
 - **Player images:** choose **Player view**, select the recipient, and choose **Everyone’s board + own hand** or **Own board + hand**. The recipient's board and hand get the prominent panel. Under **Players → Player images**, export the selected player, all players in the current version, or both versions for everyone. Batches download as one PNG ZIP with numbered filenames and a manifest.
 - **Zones:** per-player counts from 0–1,000,000, custom areas (up to 16 per player), stacks, fans, grids, face visibility, and card transfers. Click a zone in the preview to focus it. Overview shows all players.
 - **Cards:** a standard 52-card deck and an original illustrated demo; add, edit, delete, search, and import cards. Large catalogs are paginated. Import accepts a deck object, an array of card objects, or an array of names. Missing card IDs are assigned on file import.
@@ -127,6 +127,31 @@ unsubscribe();
 You can also call `Tabletop.render(config)` or `Tabletop.toPNG(config)` without creating an engine. `renderDetailed(config)` returns `{svg, metrics}` with total card counts and the number actually drawn. All engine snapshots are copies. Commands validate their complete candidate state before committing, emitting an event, or entering history. Invalid commands throw and leave state unchanged. Importing a valid configuration is an undoable `state.replace` command.
 
 To embed this in another static page, load `js/engine.js`, `js/extras.js`, `js/perspective.js`, `js/layout.js`, `js/scryfall.js`, and `js/renderer.js` in that order. Add `js/archive.js` and `js/export.js` for browser image and ZIP export, `js/url.js` for URL helpers, and `js/library.js` for example fixtures. The playground in `js/app.js`/`js/studio-extras.js` and standalone viewer in `js/viewer.js` are optional interfaces over the same renderer.
+
+## Player avatars
+
+Set optional `player.avatarUrl` to an HTTP(S) image URL. Any aspect ratio is cropped to a centered square (cover, without stretching). A 512×512 source works for small player tiles too. Avatars appear in the player headers of overview, zone focus, and both player-image framings. Old scenes get colored initials automatically.
+
+```js
+engine.dispatch({
+  type: 'player.update',
+  payload: { playerId: 'p1', avatarUrl: 'https://your-cdn.example/alice.jpg' }
+});
+// Clear with avatarUrl: null or ''. The value survives JSON and render URLs.
+
+// A standalone square, defaulting to 512×512. Sizes 1–4096 are supported.
+const player = engine.state.players[0];
+const rawSVG = Tabletop.avatarSVG(player, { size: 64 }); // Browser or Node; keeps the URL
+const portableSVG = await Tabletop.toAvatarSVG(player, { size: 512 }); // Browser; embeds image
+const png = await Tabletop.toAvatarPNG(player, { size: 512 }); // Browser; PNG Blob
+Tabletop.download(png, 'alice-avatar.png');
+```
+
+The standalone helpers also accept just `{name, color, avatarUrl}` without a full game state. Name and color are optional there; the defaults are `Player` and a muted green. The fallback uses up to two initials and the player's color, with contrasting text. Missing URLs, load failures, invalid images, and failed embedding use this fallback. Avatar failures do not prevent the URL viewer becoming ready or interrupt scene/player exports. Fallbacks are drawn as SVG shapes and text, so they need no network request. The supplied URL remains in state so the caller can retry later.
+
+In the playground, **Players → Player details** provides the URL field, 64/32/24 px previews, **Use initials**, and an avatar PNG download with 32/64/128/256/512 px presets. The scene and avatar exports use the same crop. Successfully embedded avatar images are reused within a player export batch.
+
+An image host must allow CORS for browser PNG or portable SVG export. An avatar may display in the preview yet use initials in a download if its host blocks cross-origin fetching. Use a CORS-enabled image URL to retain the image in exported files; no proxy or image server is added. Base64 PNG/JPEG/WebP/GIF/AVIF data URLs also work but make scene links larger. Card artwork keeps its existing required-asset error behavior, including when a card and avatar share a URL.
 
 ## Images for each player
 
@@ -232,7 +257,7 @@ Minimal configurations are expanded by `Tabletop.normalize(config)`. Use `Tablet
 | `activeDeckId` | The ID of a deck in `decks`, or `"standard"` / `"arcana"` |
 | `decks` | Deck objects to add or override, up to 30 including built-ins |
 
-A full player object has `id`, `name`, six-digit hex `color`, `zones`, and optionally a `counters` list of `{name, count}` objects. The list takes precedence over the legacy numeric `stats` object, which still defaults to life/score. Compact shows the first counter; full uses an adaptive grid with an explicit overflow count when space is limited. Values fit their cells without silently capping or rounding exact mode. Zone IDs are local to a player. The same zone IDs can be reused across players. See [counter options and edge cases](EXTRAS.md#named-counters).
+A full player object has `id`, `name`, six-digit hex `color`, `zones`, optional `avatarUrl`, and optionally a `counters` list of `{name, count}` objects. The list takes precedence over the legacy numeric `stats` object, which still defaults to life/score. Compact shows the first counter; full uses an adaptive grid with an explicit overflow count when space is limited. Values fit their cells without silently capping or rounding exact mode. Zone IDs are local to a player. The same zone IDs can be reused across players. See [avatar options](#player-avatars) and [counter options and edge cases](EXTRAS.md#named-counters).
 
 ```json
 {
@@ -356,7 +381,7 @@ Call `engine.dispatch({ type, payload })`. All commands return a new snapshot an
 | `stage.update` | Any stage fields |
 | `view.update` | Any view fields |
 | `player.count` | `{ count }` |
-| `player.update` | `{ playerId, name?, color?, stats?, counters? }` (counters replaces the full list) |
+| `player.update` | `{ playerId, name?, color?, avatarUrl?, stats?, counters? }` (`avatarUrl: null` clears the image; counters replaces the full list) |
 | `extras.update` | `{ highlights?, focus?, cards? }` (each supplied list replaces that list; `focus: null` clears focus) |
 | `zone.update` | `{ playerId, zoneId, name?, count?, layout?, faceDown?, visibility?, cardIds? }` |
 | `zone.add` | `{ playerId, id, name, count?, layout? }` |
@@ -373,4 +398,4 @@ Call `engine.dispatch({ type, payload })`. All commands return a new snapshot an
 
 ## Verification
 
-`npm test` uses Node's built-in test runner. It checks atomic rejection, immutable snapshots, history, identity-preserving transfers, focus repair, custom decks, deterministic output, escaping, the scene registry, and bounded rendering across 1–8 players, extreme dimensions, every density, and counts up to a million. Audience tests verify each recipient's faces, hidden artwork exclusion, both framings, private focus, scene migration, and stable batch output. Scryfall tests cover exact TTL boundaries, persistent reuse, deduplication, rate limiting, failures, double-faced cards, and fetching only visible faces. URL tests verify compressed and raw round trips, Unicode, fixed snapshots, subdirectory hosting, malformed requests, compatibility fallbacks, and encoded/expanded size limits. Browser export uses native SVG/image/canvas support and should be checked in the target browser when new artwork sources or new scene features are introduced.
+`npm test` uses Node's built-in test runner. It checks atomic rejection, immutable snapshots, history, identity-preserving transfers, focus repair, custom decks, deterministic output, escaping, the scene registry, and bounded rendering across 1–8 players, extreme dimensions, every density, and counts up to a million. Audience tests verify each recipient's faces, hidden artwork exclusion, both framings, private focus, scene migration, and stable batch output. Scryfall tests cover exact TTL boundaries, persistent reuse, deduplication, rate limiting, failures, double-faced cards, and fetching only visible faces. URL tests verify compressed and raw round trips, Unicode, fixed snapshots, subdirectory hosting, malformed requests, compatibility fallbacks, and encoded/expanded size limits. Avatar tests cover URL persistence, undo/clear, validation, SVG escaping, initials, size bounds, and inclusion only for displayed players. Browser export uses native SVG/image/canvas support and should be checked in the target browser when new artwork sources or new scene features are introduced.

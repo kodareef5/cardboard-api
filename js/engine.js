@@ -129,6 +129,19 @@
       return false;
     }
   }
+  function validateAvatar(player) {
+    if (!player || typeof player !== 'object' || Array.isArray(player))
+      fail('An avatar needs a player object.');
+    if (player.name !== undefined) str(player.name, 'Player name', 40);
+    if (player.color !== undefined && !/^#[a-f0-9]{6}$/i.test(player.color))
+      fail('Player color must be a six-digit hex color.');
+    if (
+      player.avatarUrl != null &&
+      (typeof player.avatarUrl !== 'string' || !validArt(player.avatarUrl))
+    )
+      fail('Avatar URL must be HTTP(S) or a base64 PNG, JPEG, WebP, GIF, or AVIF image.');
+    return player;
+  }
   const scryfallID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
   function normalizeCard(input) {
     if (typeof input === 'string' && scryfallID.test(input)) input = { scryfallId: input };
@@ -236,6 +249,7 @@
       players = Array.from({ length: count }, (_, i) => makePlayer(i, setup));
     }
     players.forEach((player) => {
+      if (player.avatarUrl === null || player.avatarUrl === '') delete player.avatarUrl;
       player.stats = { life: 20, score: 0, ...player.stats };
       if (player.counters !== undefined) player.counters = T.normalizeCounters(player.counters);
       if (Array.isArray(player.zones))
@@ -297,6 +311,7 @@
     if (!active) fail('Active deck does not exist.');
     const cardIds = new Set(active.cards.map((card) => card.id));
     for (const player of state.players) {
+      validateAvatar(player);
       str(player.id, 'Player ID', 80);
       str(player.name, 'Player name', 40);
       if (!/^#[a-f0-9]{6}$/i.test(player.color))
@@ -443,6 +458,10 @@
         const { player } = locate(next, p.playerId);
         if (p.name !== undefined) player.name = p.name;
         if (p.color !== undefined) player.color = p.color;
+        if (p.avatarUrl !== undefined) {
+          if (p.avatarUrl === null || p.avatarUrl === '') delete player.avatarUrl;
+          else player.avatarUrl = p.avatarUrl;
+        }
         if (p.stats !== undefined) player.stats = { ...player.stats, ...p.stats };
         if (p.counters !== undefined) player.counters = T.normalizeCounters(p.counters);
         break;
@@ -628,6 +647,7 @@
     normalize,
     validate,
     validateDeck,
+    validateAvatar,
     normalizeCard,
     normalizeDeck,
     cardAt,

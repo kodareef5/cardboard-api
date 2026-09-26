@@ -9,8 +9,7 @@
       reader.readAsDataURL(blob);
     });
   }
-  async function portableSVG(config, artworkCache = new Map()) {
-    const source = await T.renderAsync(config);
+  async function embedImages(source, artworkCache = new Map()) {
     const document = new DOMParser().parseFromString(source, 'image/svg+xml');
     if (document.querySelector('parsererror'))
       throw new Error('The scene did not return valid SVG.');
@@ -19,6 +18,14 @@
       ...new Set(images.map((image) => image.getAttribute('href')).filter(Boolean)),
     ];
     const embedded = new Map();
+    // A URL used by a card is still required, even if an avatar uses it too.
+    const optional = new Set(
+      sources.filter((url) =>
+        images
+          .filter((image) => image.getAttribute('href') === url)
+          .every((image) => image.hasAttribute('data-avatar-image')),
+      ),
+    );
     // A small queue keeps large custom decks from opening hundreds of requests at once.
     let cursor = 0,
       failure;
@@ -28,7 +35,9 @@
           const url = sources[cursor++];
           try {
             if (artworkCache.has(url)) {
-              embedded.set(url, artworkCache.get(url));
+              const cached = artworkCache.get(url);
+              if (!cached) throw new Error('Image unavailable.');
+              embedded.set(url, cached);
               continue;
             }
             let data = url;
@@ -45,13 +54,18 @@
               data = await blobToDataURL(blob);
             }
             // An SVG can decode successfully even when one of its child images is broken.
-            // Validate each image first so exports never quietly substitute the placeholder.
+            // Required card art must decode; optional avatars can use their initials tile.
             const image = new Image();
             image.src = data;
             await image.decode();
             embedded.set(url, data);
             artworkCache.set(url, data);
           } catch {
+            if (optional.has(url)) {
+              embedded.set(url, null);
+              artworkCache.set(url, null);
+              continue;
+            }
             failure ||= new Error(
               url.startsWith('data:')
                 ? 'A card contains an unreadable artwork image. Edit that card and upload a valid image.'
@@ -64,21 +78,25 @@
     if (failure) throw failure;
     images.forEach((image) => {
       const value = embedded.get(image.getAttribute('href'));
-      if (value) image.setAttribute('href', value);
+      if (value) {
+        image.setAttribute('href', value);
+        if (image.hasAttribute('data-avatar-image')) setAvatarLoaded(image, true);
+      } else if (image.hasAttribute('data-avatar-image')) image.remove();
     });
     return new XMLSerializer().serializeToString(document);
   }
-  async function toPNG(config, artworkCache) {
-    const state = T.normalize(config),
-      svg = await portableSVG(state, artworkCache);
+  async function portableSVG(config, artworkCache) {
+    return embedImages(await T.renderAsync(config), artworkCache);
+  }
+  async function rasterizeSVG(svg, width, height) {
     const url = URL.createObjectURL(new Blob([svg], { type: 'image/svg+xml' }));
     try {
       const image = new Image();
       image.src = url;
       await image.decode();
       const canvas = document.createElement('canvas');
-      canvas.width = state.stage.width;
-      canvas.height = state.stage.height;
+      canvas.width = width;
+      canvas.height = height;
       const context = canvas.getContext('2d');
       if (!context) throw new Error('Canvas rendering is unavailable in this browser.');
       context.drawImage(image, 0, 0);
@@ -92,6 +110,40 @@
     } finally {
       URL.revokeObjectURL(url);
     }
+  }
+  async function toPNG(config, artworkCache) {
+    const state = T.normalize(config);
+    return rasterizeSVG(
+      await portableSVG(state, artworkCache),
+      state.stage.width,
+      state.stage.height,
+    );
+  }
+  async function toAvatarSVG(player, options = {}) {
+    return embedImages(T.avatarSVG(player, options));
+  }
+  async function toAvatarPNG(player, options = {}) {
+    const { size = 512 } = options;
+    const svg = await toAvatarSVG(player, { size });
+    return rasterizeSVG(svg, size, size);
+  }
+  function applyAvatarFallbacks(root) {
+    root.querySelectorAll('[data-avatar-image]').forEach((image) => {
+      image.addEventListener('load', () => setAvatarLoaded(image, true), { once: true });
+      image.addEventListener(
+        'error',
+        () => {
+          setAvatarLoaded(image, false);
+          image.remove();
+        },
+        { once: true },
+      );
+    });
+  }
+  function setAvatarLoaded(image, loaded) {
+    // Preserve the colored background for transparent PNGs, without initials showing through.
+    const initials = image.closest('svg')?.querySelector('[data-avatar-fallback] text');
+    initials?.setAttribute('visibility', loaded ? 'hidden' : 'visible');
   }
   function download(blob, name) {
     const url = URL.createObjectURL(blob),
@@ -146,6 +198,9 @@
   Object.assign(T, {
     toSVG: portableSVG,
     toPNG,
+    toAvatarSVG,
+    toAvatarPNG,
+    applyAvatarFallbacks,
     exportPlayers,
     toPlayerZIP,
     download,

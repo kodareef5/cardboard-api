@@ -23,7 +23,7 @@ url.hash = new URLSearchParams({ config: JSON.stringify(request) }).toString();
 
 Add `?embed=1` before the fragment for a scene without controls. The URL serves HTML; JavaScript in a browser performs rendering. An HTTP fetch alone does not generate an image.
 
-In browser automation, await `Tabletop.viewer.ready` after navigation. It rejects on rendering or artwork errors. Use `await Tabletop.toPNG(Tabletop.viewer.state)` for a PNG Blob, or `await Tabletop.toSVG(Tabletop.viewer.state)` for SVG text. The page also has download buttons.
+In browser automation, await `Tabletop.viewer.ready` after navigation. It rejects on rendering or required card-art errors; unavailable avatars use initials. Use `await Tabletop.toPNG(Tabletop.viewer.state)` for a PNG Blob, or `await Tabletop.toSVG(Tabletop.viewer.state)` for SVG text. The page also has download buttons.
 
 ## Keep requests and replies small
 
@@ -37,6 +37,7 @@ In browser automation, await `Tabletop.viewer.ready` after navigation. It reject
 - Dimensions: 64-4096 pixels per side; 1-8 players. Theme, density, stats, zoom, and zone focus are configurable.
 - Extras: reusable glows, single-card focus layouts, and per-position card annotations. Player `counters` are `{name, count}` lists; exact is the default, with compact/capped/scientific options. Use `"infinity"` or decimal strings for huge integers. Read the extras guide for shapes and targeting.
 - Player images: `playerScope: 'table'` shows public boards plus that player's hand; `'self'` shows only their zones. `viewerId` identifies the recipient.
+- Avatars: optional `player.avatarUrl` uses a centered square cover crop and colored initials on failure. Browser avatar PNG/SVG exports default to 512×512; see the README's Player avatars section.
 - Exact cards: provide deck definitions and zone `cardIds`/`count`. Unassigned positions use seeded sample cards.
 - MTG: supply a Scryfall printing ID in `scryfallId`; assets have a three-day browser cache. Custom cards accept `artUrl`; remote hosts must allow CORS for export.
 - Visibility controls drawing, not access to the request. Omit private data before sharing a URL; selecting a player does not redact it.

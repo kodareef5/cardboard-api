@@ -27,6 +27,7 @@ export const {
   toConfig,
   render,
   renderDetailed,
+  avatarSVG,
   renderAsync,
   encodeRequest,
   decodeRequest,

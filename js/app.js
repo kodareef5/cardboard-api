@@ -160,6 +160,7 @@
     const start = performance.now(),
       result = T.renderDetailed(state);
     $('stage-image').innerHTML = result.svg;
+    T.applyAvatarFallbacks($('stage-image'));
     lastRender = { ...result.metrics, ms: Math.max(1, Math.round(performance.now() - start)) };
     $('dimension-top').textContent = `${state.stage.width} px`;
     $('dimension-side').textContent = `${state.stage.height} px`;
@@ -173,6 +174,7 @@
         .then((loaded) => {
           if (revision !== stageRevision) return;
           $('stage-image').innerHTML = loaded.svg;
+          T.applyAvatarFallbacks($('stage-image'));
           if (!exportBusy) $('preview-status').textContent = 'Ready';
         })
         .catch((error) => {
@@ -270,11 +272,17 @@
     $('player-list').innerHTML = state.players
       .map(
         (p) =>
-          `<button class="player-row ${p.id === player.id ? 'active' : ''}" data-select-player="${esc(p.id)}" aria-pressed="${p.id === player.id}"><span class="player-dot" style="background:${p.color}"></span><span>${esc(p.name)}</span><span class="subtle">${p.zones.length} zones</span></button>`,
+          `<button class="player-row ${p.id === player.id ? 'active' : ''}" data-select-player="${esc(p.id)}" aria-pressed="${p.id === player.id}"><span class="player-avatar-mini">${T.avatarSVG(p, { size: 28 })}</span><span class="player-list-name">${esc(p.name)}</span><span class="subtle">${p.zones.length} zones</span></button>`,
       )
       .join('');
     setValue('player-name', player.name);
     setValue('player-color', player.color);
+    setValue('player-avatar-url', player.avatarUrl || '');
+    $('clear-player-avatar').disabled = !player.avatarUrl;
+    $('player-avatar-preview').innerHTML = [64, 32, 24]
+      .map((size) => T.avatarSVG(player, { size })).join('');
+    T.applyAvatarFallbacks($('player-list'));
+    T.applyAvatarFallbacks($('player-avatar-preview'));
     const library = player.zones.find((z) => z.id === 'library'),
       hand = player.zones.find((z) => z.id === 'hand');
     $('draw-card').disabled = !library?.count || !hand || hand.count >= T.limits.maxCards;
@@ -576,6 +584,30 @@
       playerId: engine.state.view.playerId,
       color: event.target.value,
     });
+  $('player-avatar-url').onchange = (event) =>
+    dispatch('player.update', {
+      playerId: engine.state.view.playerId,
+      avatarUrl: event.target.value.trim(),
+    });
+  $('clear-player-avatar').onclick = () =>
+    dispatch('player.update', { playerId: engine.state.view.playerId, avatarUrl: null });
+  $('download-player-avatar').onclick = async () => {
+    const player = selected(engine.state).player;
+    const size = Number($('avatar-export-size').value);
+    const button = $('download-player-avatar');
+    button.disabled = true;
+    button.textContent = 'Preparing…';
+    try {
+      const blob = await T.toAvatarPNG(player, { size });
+      T.download(blob, `avatar-${size}x${size}.png`);
+      toast(`${size} × ${size} avatar downloaded.`);
+    } catch (error) {
+      toast(error.message, true);
+    } finally {
+      button.disabled = false;
+      button.textContent = 'Download avatar';
+    }
+  };
   $('draw-card').onclick = () => {
     const id = engine.state.view.playerId;
     if (

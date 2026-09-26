@@ -39,19 +39,16 @@
     $('render-image').style.height = `${Math.max(1, state.stage.height * scale)}px`;
   }
   async function artworkReady() {
-    const urls = [
-      ...new Set(
-        [...$('render-image').querySelectorAll('image')]
-          .map((image) => image.getAttribute('href'))
-          .filter(Boolean),
-      ),
-    ];
+    const elements = [...$('render-image').querySelectorAll('image')];
+    const urls = [...new Set(elements.map((image) => image.getAttribute('href')).filter(Boolean))];
     let cursor = 0;
     await Promise.all(
       Array.from({ length: Math.min(4, urls.length) }, async () => {
         while (cursor < urls.length) {
+          const url = urls[cursor++];
+          const matching = elements.filter((element) => element.getAttribute('href') === url);
           const image = new Image();
-          image.src = urls[cursor++];
+          image.src = url;
           let timeout;
           try {
             await Promise.race([
@@ -61,6 +58,11 @@
               }),
             ]);
           } catch {
+            matching
+              .filter((element) => element.hasAttribute('data-avatar-image'))
+              .forEach((element) => element.remove());
+            if (matching.every((element) => element.hasAttribute('data-avatar-image')))
+              continue;
             throw new Error(
               'A card image could not be loaded. Check its artwork URL and try again.',
             );
@@ -102,6 +104,7 @@
         const result = await T.renderDetailedAsync(request);
         if (current !== revision) return null;
         $('render-image').innerHTML = result.svg;
+        T.applyAvatarFallbacks($('render-image'));
         await artworkReady();
         if (current !== revision) return null;
         state = request;
