@@ -1,0 +1,13 @@
+{
+  "stage": { "width": 1024, "height": 1024, "theme": "evergreen" },
+  "players": 2,
+  "activeDeckId": "mtg",
+  "decks": [
+    {
+      "id": "mtg",
+      "name": "Magic: The Gathering",
+      "cards": [{ "scryfallId": "683a5707-cddb-494d-9b41-51b4584ded69" }]
+    }
+  ],
+  "view": { "mode": "player", "viewerId": "p1", "playerScope": "table" }
+}

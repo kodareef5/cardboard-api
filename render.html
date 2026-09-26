@@ -1,0 +1,61 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="referrer" content="no-referrer" />
+    <meta
+      name="description"
+      content="A stateless tabletop renderer. Open a scene URL and export an image in your browser."
+    />
+    <title>Tabletop — Render</title>
+    <link
+      rel="icon"
+      href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='16' fill='%231b453b'/%3E%3Cpath d='M32 10L49 32 32 54 15 32Z' fill='%23e4c59a'/%3E%3C/svg%3E"
+    />
+    <link rel="stylesheet" href="render.css" />
+    <script defer src="js/engine.js"></script>
+    <script defer src="js/perspective.js"></script>
+    <script defer src="js/layout.js"></script>
+    <script defer src="js/scryfall.js"></script>
+    <script defer src="js/renderer.js"></script>
+    <script defer src="js/archive.js"></script>
+    <script defer src="js/export.js"></script>
+    <script defer src="js/url.js"></script>
+    <script defer src="js/viewer.js"></script>
+  </head>
+  <body data-render-status="loading">
+    <header class="render-toolbar">
+      <a class="wordmark" href="index.html" aria-label="Tabletop playground"
+        >tabletop<span>.</span></a
+      >
+      <div class="render-description">
+        <span class="eyebrow">SCENE RENDER</span
+        ><span id="render-dimensions">Preparing your scene</span>
+      </div>
+      <nav aria-label="Render actions">
+        <a class="button quiet" id="edit-render" href="index.html">Open playground</a>
+        <button class="button" id="copy-render-link" disabled>Copy link</button>
+        <button class="button" id="download-render-svg" disabled>SVG</button>
+        <button class="button primary" id="download-render-png" disabled>Download PNG</button>
+      </nav>
+    </header>
+    <main id="render-canvas" aria-label="Rendered scene" aria-busy="true">
+      <div id="render-image" hidden></div>
+      <div id="render-message" role="status">
+        <span class="message-mark" aria-hidden="true">◇</span>
+        <h1 id="render-message-title">Rendering your scene</h1>
+        <p id="render-message-detail">Loading the request and card artwork.</p>
+        <button class="button" id="retry-render" hidden>Try again</button>
+      </div>
+    </main>
+    <footer class="render-footer">
+      <span id="render-status" role="status">Loading…</span
+      ><span>Rendered in your browser</span>
+    </footer>
+    <div id="render-notice" role="status" hidden></div>
+    <noscript
+      >This renderer needs JavaScript enabled. All rendering happens in your browser.</noscript
+    >
+  </body>
+</html>

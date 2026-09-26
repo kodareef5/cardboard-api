@@ -1,0 +1,999 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="theme-color" content="#f6f5ef" />
+    <meta
+      name="description"
+      content="A small, dependency-free studio for building tabletop images with a programmable scene engine."
+    />
+    <title>Tabletop — Scene studio</title>
+    <link
+      rel="icon"
+      href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='16' fill='%231b453b'/%3E%3Cpath d='M32 10L49 32 32 54 15 32Z' fill='%23e4c59a'/%3E%3C/svg%3E"
+    />
+    <link rel="stylesheet" href="styles.css" />
+    <script defer src="js/engine.js"></script>
+    <script defer src="js/perspective.js"></script>
+    <script defer src="js/layout.js"></script>
+    <script defer src="js/scryfall.js"></script>
+    <script defer src="js/renderer.js"></script>
+    <script defer src="js/archive.js"></script>
+    <script defer src="js/export.js"></script>
+    <script defer src="js/url.js"></script>
+    <script defer src="js/app.js"></script>
+  </head>
+  <body>
+    <svg class="icon-defs" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+      <defs>
+        <symbol id="i-stage" viewBox="0 0 24 24">
+          <rect x="3" y="4" width="18" height="16" rx="2" />
+          <path d="M3 9h18M8 9v11" />
+        </symbol>
+        <symbol id="i-cards" viewBox="0 0 24 24">
+          <rect x="8" y="3" width="12" height="17" rx="2" />
+          <path d="M5 6l-2 1 3 14 10-2M14 8l3 4-3 4-3-4Z" />
+        </symbol>
+        <symbol id="i-code" viewBox="0 0 24 24">
+          <path d="M8 6l-6 6 6 6M16 6l6 6-6 6M14 3l-4 18" />
+        </symbol>
+        <symbol id="i-download" viewBox="0 0 24 24">
+          <path d="M12 3v12m-5-5 5 5 5-5M4 16v4h16v-4" />
+        </symbol>
+        <symbol id="i-chevron" viewBox="0 0 24 24"><path d="m7 10 5 5 5-5" /></symbol>
+        <symbol id="i-arrow" viewBox="0 0 24 24"><path d="M5 12h14m-5-5 5 5-5 5" /></symbol>
+        <symbol id="i-focus" viewBox="0 0 24 24">
+          <path d="M8 3H3v5m13-5h5v5M3 16v5h5m13-5v5h-5" />
+          <rect x="8" y="8" width="8" height="8" rx="1" />
+        </symbol>
+        <symbol id="i-grid" viewBox="0 0 24 24">
+          <rect x="3" y="3" width="7" height="7" rx="1" />
+          <rect x="14" y="3" width="7" height="7" rx="1" />
+          <rect x="3" y="14" width="7" height="7" rx="1" />
+          <rect x="14" y="14" width="7" height="7" rx="1" />
+        </symbol>
+        <symbol id="i-undo" viewBox="0 0 24 24">
+          <path d="m8 4-5 5 5 5M3 9h10a7 7 0 0 1 0 14" transform="translate(1 -2)" />
+        </symbol>
+        <symbol id="i-redo" viewBox="0 0 24 24">
+          <path d="m16 4 5 5-5 5M21 9h-10a7 7 0 0 0 0 14" transform="translate(-1 -2)" />
+        </symbol>
+        <symbol id="i-shuffle" viewBox="0 0 24 24">
+          <path
+            d="M3 6h3c5 0 7 12 12 12h3m-4-4 4 4-4 4M3 18h3c2 0 4-3 5-6m3-4c1-1 2-2 4-2h3m-4-4 4 4-4 4"
+          />
+        </symbol>
+        <symbol id="i-plus" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14" /></symbol>
+        <symbol id="i-minus" viewBox="0 0 24 24"><path d="M5 12h14" /></symbol>
+        <symbol id="i-users" viewBox="0 0 24 24">
+          <circle cx="9" cy="8" r="3" />
+          <path d="M3 21v-3a6 6 0 0 1 12 0v3m1-16a3 3 0 0 1 0 6m2 3c3 1 3 4 3 7" />
+        </symbol>
+        <symbol id="i-stack" viewBox="0 0 24 24">
+          <path d="m3 8 9-5 9 5-9 5ZM3 12l9 5 9-5M3 16l9 5 9-5" />
+        </symbol>
+        <symbol id="i-search" viewBox="0 0 24 24">
+          <circle cx="10" cy="10" r="6" />
+          <path d="m15 15 6 6" />
+        </symbol>
+        <symbol id="i-upload" viewBox="0 0 24 24">
+          <path d="M12 16V3m-5 5 5-5 5 5M4 16v5h16v-5" />
+        </symbol>
+        <symbol id="i-close" viewBox="0 0 24 24"><path d="m6 6 12 12M6 18 18 6" /></symbol>
+        <symbol id="i-check" viewBox="0 0 24 24"><path d="m5 12 4 4L19 6" /></symbol>
+        <symbol id="i-trash" viewBox="0 0 24 24">
+          <path d="M3 6h18M9 6V3h6v3M5 6l1 15h12l1-15M10 10v7m4-7v7" />
+        </symbol>
+        <symbol id="i-copy" viewBox="0 0 24 24">
+          <rect x="8" y="8" width="13" height="13" rx="2" />
+          <path d="M16 8V3H3v13h5" />
+        </symbol>
+        <symbol id="i-help" viewBox="0 0 24 24">
+          <circle cx="12" cy="12" r="9" />
+          <path d="M9 9a3 3 0 0 1 6 0c0 2-3 2-3 5m0 3h.01" />
+        </symbol>
+        <symbol id="i-eye" viewBox="0 0 24 24">
+          <path d="M2 12s4-7 10-7 10 7 10 7-4 7-10 7S2 12 2 12Z" />
+          <circle cx="12" cy="12" r="3" />
+        </symbol>
+      </defs>
+    </svg>
+
+    <header class="topbar">
+      <a class="brand" href="#stage" aria-label="Tabletop studio home"
+        ><span class="brand-mark"><span></span><span></span></span
+        ><span>tabletop<span class="brand-period">.</span></span
+        ><span class="studio-tag">STUDIO</span></a
+      >
+      <span class="top-divider"></span
+      ><span class="project-name"
+        >Untitled table
+        <span class="save-indicator" id="save-indicator">Saved locally</span></span
+      >
+      <div class="top-actions">
+        <button class="button quiet save-scene" id="save-scene">
+          <svg class="icon"><use href="#i-code" /></svg>Save scene
+        </button>
+        <div class="export-group">
+          <button class="button primary" id="export-png">
+            <svg class="icon"><use href="#i-download" /></svg><span>Export image</span>
+          </button>
+          <details class="export-options">
+            <summary aria-label="More export options">
+              <svg class="icon"><use href="#i-chevron" /></svg>
+            </summary>
+            <div class="dropdown">
+              <button data-export="png">PNG image <span>Raster</span></button
+              ><button data-export="svg">SVG image <span>Vector</span></button
+              ><button data-export="json">Scene JSON <span>Editable</span></button>
+              <button data-export="players">
+                All players · this view <span>PNG ZIP</span>
+              </button>
+              <button data-export="players-both">
+                All players · both views <span>PNG ZIP</span>
+              </button>
+            </div>
+          </details>
+        </div>
+      </div>
+    </header>
+
+    <div class="app-shell">
+      <nav class="app-nav" aria-label="Main navigation">
+        <div class="nav-primary">
+          <button class="nav-item active" data-page="stage" aria-current="page">
+            <svg class="icon"><use href="#i-stage" /></svg><span>Stage</span>
+          </button>
+          <button class="nav-item" data-page="cards">
+            <svg class="icon"><use href="#i-cards" /></svg><span>Cards</span>
+          </button>
+          <button class="nav-item" data-page="api">
+            <svg class="icon"><use href="#i-code" /></svg><span>API</span>
+          </button>
+        </div>
+        <div class="nav-bottom">
+          <span class="nav-version">v0.1</span
+          ><button class="nav-item" id="help-button" aria-label="Open studio guide">
+            <svg class="icon"><use href="#i-help" /></svg><span>Guide</span>
+          </button>
+        </div>
+      </nav>
+
+      <div class="page studio-layout" id="page-stage">
+        <aside class="control-panel" aria-label="Scene controls">
+          <div class="panel-heading">
+            <span class="eyebrow">THE WORKBENCH</span>
+            <h1>Scene settings</h1>
+            <p>A little space for endless possibilities.</p>
+          </div>
+          <div class="control-tabs" role="tablist" aria-label="Settings sections">
+            <button class="active" data-control-tab="stage" role="tab" aria-selected="true">
+              Stage</button
+            ><button data-control-tab="players" role="tab" aria-selected="false">Players</button
+            ><button data-control-tab="zones" role="tab" aria-selected="false">Zones</button>
+          </div>
+          <div class="control-scroll">
+            <div id="controls-stage" class="control-view">
+              <section class="control-section">
+                <div class="section-title">
+                  <h2>Dimensions</h2>
+                  <span class="tiny-pill" id="aspect-label">1:1</span>
+                </div>
+                <div class="dimension-inputs">
+                  <label
+                    >Width
+                    <div class="input-unit">
+                      <input
+                        id="stage-width"
+                        type="number"
+                        min="64"
+                        max="4096"
+                        value="512"
+                      /><span>px</span>
+                    </div></label
+                  ><span class="dimension-times">×</span
+                  ><label
+                    >Height
+                    <div class="input-unit">
+                      <input
+                        id="stage-height"
+                        type="number"
+                        min="64"
+                        max="4096"
+                        value="512"
+                      /><span>px</span>
+                    </div></label
+                  ><button
+                    class="icon-button swap-button"
+                    id="swap-dimensions"
+                    title="Swap width and height"
+                    aria-label="Swap width and height"
+                  >
+                    ⇄
+                  </button>
+                </div>
+                <div class="format-presets">
+                  <button class="format-preset active" data-size="512,512">
+                    <span class="format-shape square"></span><strong>Square</strong
+                    ><span>1:1 · SMS</span></button
+                  ><button class="format-preset" data-size="1080,1920">
+                    <span class="format-shape portrait"></span><strong>Portrait</strong
+                    ><span>9:16 · Social</span></button
+                  ><button class="format-preset" data-size="1920,1080">
+                    <span class="format-shape landscape"></span><strong>Wide</strong
+                    ><span>16:9 · Slides</span>
+                  </button>
+                </div>
+              </section>
+              <section class="control-section">
+                <div class="section-title">
+                  <h2>Table theme</h2>
+                  <span class="subtle" id="theme-name">Evergreen</span>
+                </div>
+                <div class="theme-options" id="theme-options"></div>
+                <label class="switch-row"
+                  ><span>Subtle texture</span
+                  ><input id="stage-texture" type="checkbox" role="switch" checked /><span
+                    class="switch"
+                  ></span
+                ></label>
+              </section>
+              <section class="control-section">
+                <div class="section-title">
+                  <h2>Starting setup</h2>
+                  <span class="section-number">01</span>
+                </div>
+                <select id="setup-select" aria-label="Starting setup">
+                  <option value="standard">Standard table</option>
+                  <option value="poker">Poker study</option>
+                  <option value="commander">Commander study</option>
+                </select>
+                <p class="field-help" id="setup-help">
+                  Two players. A hand, main area, library, and graveyard for each.
+                </p>
+                <button class="text-button" data-open-tab="players">
+                  Customize players & zones <svg class="icon"><use href="#i-arrow" /></svg>
+                </button>
+              </section>
+              <section class="control-section">
+                <div class="section-title"><h2>Detail & density</h2></div>
+                <div class="segmented" id="density-options" aria-label="Card density">
+                  <button data-density="calm">Calm</button
+                  ><button data-density="balanced" class="active">Balanced</button
+                  ><button data-density="dense">Dense</button>
+                </div>
+                <label class="inline-field"
+                  ><span>Player stats</span
+                  ><select id="stats-select">
+                    <option value="hidden">Hidden</option>
+                    <option value="compact" selected>Compact</option>
+                    <option value="full">Full</option>
+                  </select></label
+                ><label class="switch-row"
+                  ><span>Zone labels</span
+                  ><input id="zone-labels" type="checkbox" role="switch" checked /><span
+                    class="switch"
+                  ></span></label
+                ><label class="switch-row"
+                  ><span>Safe area guide <span class="label-note">preview</span></span
+                  ><input id="safe-area" type="checkbox" role="switch" /><span
+                    class="switch"
+                  ></span
+                ></label>
+              </section>
+              <div class="panel-note">
+                <span class="note-diamond">◇</span>
+                <p>One scene, many arrangements.<br />Every control is part of the API.</p>
+              </div>
+            </div>
+            <div id="controls-players" class="control-view" hidden>
+              <section class="control-section">
+                <div class="section-title">
+                  <h2>Seats at the table</h2>
+                  <span class="subtle">1–8 players</span>
+                </div>
+                <div class="player-count-options" id="player-count-options"></div>
+                <p class="field-help">The stage rearranges as players join.</p>
+              </section>
+              <section class="control-section">
+                <div class="section-title"><h2>Players</h2></div>
+                <div id="player-list" class="player-list"></div>
+              </section>
+              <section class="control-section player-images-section">
+                <div class="section-title">
+                  <h2>Player images</h2>
+                  <span class="tiny-pill">PNG</span>
+                </div>
+                <label class="field"
+                  >Image version
+                  <select id="player-image-scope">
+                    <option value="table">Everyone’s board + own hand</option>
+                    <option value="self">Own board + hand</option>
+                  </select>
+                </label>
+                <p class="field-help player-visibility-help">
+                  Hands default to owner-only; boards are public. Each zone’s visibility
+                  controls which card faces appear.
+                </p>
+                <button class="button full-width" id="preview-player">
+                  <svg class="icon"><use href="#i-eye" /></svg>Preview selected player
+                </button>
+                <button class="button primary full-width" id="export-player-png">
+                  <svg class="icon"><use href="#i-download" /></svg>Export selected player
+                </button>
+                <button class="button full-width" id="export-all-players">
+                  All players · this version
+                </button>
+                <button class="text-button full-width" id="export-both-players">
+                  All players · both versions <svg class="icon"><use href="#i-arrow" /></svg>
+                </button>
+                <p class="field-help" id="player-export-help" aria-live="polite">
+                  Batch images download together as a ZIP.
+                </p>
+                <button class="text-button" data-open-tab="zones">
+                  Edit zone visibility <svg class="icon"><use href="#i-arrow" /></svg>
+                </button>
+              </section>
+              <section class="control-section">
+                <div class="section-title">
+                  <h2>Player details</h2>
+                  <input id="player-color" type="color" aria-label="Player color" />
+                </div>
+                <label class="field"
+                  >Display name<input id="player-name" maxlength="40" type="text"
+                /></label>
+                <div class="two-fields">
+                  <label class="field">Life<input id="player-life" type="number" /></label
+                  ><label class="field">Score<input id="player-score" type="number" /></label>
+                </div>
+                <button class="button full-width" id="draw-card">
+                  <svg class="icon"><use href="#i-cards" /></svg>Draw a card
+                </button>
+                <p class="field-help">
+                  Move one card from the library into this player's hand.
+                </p>
+              </section>
+            </div>
+            <div id="controls-zones" class="control-view" hidden>
+              <section class="control-section">
+                <label class="field">Player<select id="zone-player"></select></label>
+                <div class="section-title zone-title">
+                  <h2>Areas of play</h2>
+                  <button class="text-button" id="add-zone">
+                    <svg class="icon"><use href="#i-plus" /></svg>Add
+                  </button>
+                </div>
+                <div id="zone-list" class="zone-list"></div>
+              </section>
+              <section class="control-section">
+                <div class="section-title">
+                  <h2 id="zone-detail-title">Hand</h2>
+                  <button
+                    class="icon-button danger-quiet"
+                    id="delete-zone"
+                    aria-label="Remove selected zone"
+                    title="Remove zone"
+                  >
+                    <svg class="icon"><use href="#i-trash" /></svg>
+                  </button>
+                </div>
+                <label class="field"
+                  >Zone name<input id="zone-name" type="text" maxlength="32" /></label
+                ><label class="field"
+                  >Arrangement<select id="zone-layout">
+                    <option value="fan">Fanned cards</option>
+                    <option value="grid">Card grid</option>
+                    <option value="stack">Stacked deck</option>
+                  </select></label
+                ><label class="switch-row"
+                  ><span>Face down in operator view</span
+                  ><input id="zone-face-down" type="checkbox" role="switch" /><span
+                    class="switch"
+                  ></span
+                ></label>
+                <label class="field visibility-field"
+                  >Card faces in player images
+                  <select id="zone-visibility">
+                    <option value="public">Everyone can see</option>
+                    <option value="owner">Only this player can see</option>
+                    <option value="hidden">No one can see (concealed)</option>
+                  </select>
+                </label>
+                <p class="field-help" id="zone-visibility-help">
+                  Visibility applies to every player image. Zone counts remain visible.
+                </p>
+                <div class="section-title zone-title"><h2>Try a different scale</h2></div>
+                <div class="count-presets">
+                  <button data-card-count="0">None</button
+                  ><button data-card-count="1">One</button
+                  ><button data-card-count="7">Some</button
+                  ><button data-card-count="50">Many</button
+                  ><button data-card-count="10000">Absurd</button>
+                </div>
+                <p class="field-help">
+                  Stacks and overflow counts keep even huge zones in bounds.
+                </p>
+                <button class="button full-width" id="focus-zone">
+                  <svg class="icon"><use href="#i-focus" /></svg>Focus this zone
+                </button>
+              </section>
+              <section class="control-section">
+                <div class="section-title"><h2>Move cards</h2></div>
+                <label class="field"
+                  >From selected zone into<select id="transfer-target"></select
+                ></label>
+                <div class="transfer-row">
+                  <input
+                    id="transfer-count"
+                    aria-label="Number of cards to move"
+                    type="number"
+                    value="1"
+                    min="1"
+                    max="1000"
+                  /><button class="button" id="transfer-cards">
+                    Move <svg class="icon"><use href="#i-arrow" /></svg>
+                  </button>
+                </div>
+              </section>
+            </div>
+          </div>
+        </aside>
+
+        <main class="stage-workspace">
+          <div class="workspace-heading">
+            <div>
+              <div class="heading-line">
+                <h2>The card table</h2>
+                <span class="scene-tag">SCENE 01</span>
+              </div>
+              <p>Set the scene. Make it your own.</p>
+            </div>
+            <div class="workspace-actions">
+              <button
+                class="button"
+                id="render-link"
+                title="Create a render link"
+                aria-label="Create a render link"
+              >
+                <svg class="icon"><use href="#i-copy" /></svg><span>Render link</span>
+              </button>
+              <button class="button quiet" id="shuffle-sample" title="Shuffle sample">
+                <svg class="icon"><use href="#i-shuffle" /></svg><span>Shuffle sample</span>
+              </button>
+            </div>
+          </div>
+          <div class="preview-panel">
+            <div class="preview-toolbar">
+              <div class="view-toggle">
+                <button class="active" data-view="overview">
+                  <svg class="icon"><use href="#i-grid" /></svg>Overview</button
+                ><button data-view="focus">
+                  <svg class="icon"><use href="#i-focus" /></svg>Zone focus
+                </button>
+                <button data-view="player">
+                  <svg class="icon"><use href="#i-eye" /></svg>Player view
+                </button>
+              </div>
+              <span class="canvas-tip" id="canvas-tip"
+                >Click any zone to take a closer look <span>↗</span></span
+              ><select id="focus-picker" aria-label="Zone to focus" hidden></select>
+              <div class="history-buttons">
+                <button
+                  class="icon-button"
+                  id="undo-button"
+                  aria-label="Undo"
+                  title="Undo (⌘/Ctrl Z)"
+                  disabled
+                >
+                  <svg class="icon"><use href="#i-undo" /></svg></button
+                ><button
+                  class="icon-button"
+                  id="redo-button"
+                  aria-label="Redo"
+                  title="Redo (⌘/Ctrl Shift Z)"
+                  disabled
+                >
+                  <svg class="icon"><use href="#i-redo" /></svg>
+                </button>
+              </div>
+            </div>
+            <div class="player-view-bar" id="player-view-bar" hidden>
+              <label
+                ><svg class="icon"><use href="#i-eye" /></svg><span>Viewing as</span
+                ><select id="viewer-picker" aria-label="Viewing player"></select
+              ></label>
+              <select id="viewer-scope" aria-label="Player image version">
+                <option value="table">Everyone’s board + own hand</option>
+                <option value="self">Own board + hand</option>
+              </select>
+              <button class="text-button" id="player-view-settings">
+                Image options <svg class="icon"><use href="#i-arrow" /></svg>
+              </button>
+            </div>
+            <div class="canvas-wrap" id="canvas-wrap">
+              <div class="stage-frame" id="stage-frame">
+                <span class="dimension-top" id="dimension-top">512 px</span
+                ><span class="dimension-side" id="dimension-side">512 px</span>
+                <div class="stage-image" id="stage-image"></div>
+                <div class="safe-area" id="safe-area-guide" hidden>
+                  <span>SAFE AREA · 5%</span>
+                </div>
+                <i class="corner top-left"></i><i class="corner top-right"></i
+                ><i class="corner bottom-left"></i><i class="corner bottom-right"></i>
+              </div>
+            </div>
+            <div class="preview-footer">
+              <div class="preview-state">
+                <span class="status-dot"></span><span id="preview-status">Ready</span
+                ><span class="footer-divider"></span><span id="output-size">512 × 512 px</span>
+              </div>
+              <div class="zoom-control">
+                <svg class="icon"><use href="#i-focus" /></svg
+                ><span class="zoom-label">Scene zoom</span
+                ><button class="icon-button" id="zoom-out" aria-label="Zoom out">
+                  <svg class="icon"><use href="#i-minus" /></svg></button
+                ><input
+                  id="scene-zoom"
+                  type="range"
+                  min="60"
+                  max="180"
+                  value="100"
+                  step="5"
+                  aria-label="Scene zoom"
+                /><button class="icon-button" id="zoom-in" aria-label="Zoom in">
+                  <svg class="icon"><use href="#i-plus" /></svg></button
+                ><button id="zoom-reset" class="zoom-value" title="Reset scene zoom">
+                  100%
+                </button>
+              </div>
+            </div>
+          </div>
+          <div class="scene-summary">
+            <button class="summary-item" data-open-tab="players">
+              <span class="summary-icon"
+                ><svg class="icon"><use href="#i-users" /></svg></span
+              ><span
+                ><strong id="summary-players">2 players</strong
+                ><small>Around the table</small></span
+              ><svg class="icon summary-arrow"><use href="#i-arrow" /></svg></button
+            ><button class="summary-item" data-open-tab="zones">
+              <span class="summary-icon"
+                ><svg class="icon"><use href="#i-stack" /></svg></span
+              ><span
+                ><strong id="summary-zones">8 zones</strong
+                ><small>Every card has a place</small></span
+              ><svg class="icon summary-arrow"><use href="#i-arrow" /></svg></button
+            ><button class="summary-item" data-page="cards">
+              <span class="summary-icon"
+                ><svg class="icon"><use href="#i-cards" /></svg></span
+              ><span
+                ><strong id="summary-cards">52 unique cards</strong
+                ><small id="summary-deck">Standard playing cards</small></span
+              ><svg class="icon summary-arrow"><use href="#i-arrow" /></svg>
+            </button>
+          </div>
+          <div class="workspace-footer">
+            <span
+              ><span class="tiny-status-dot"></span> LOCAL ENGINE
+              <span class="footer-slash">/</span>
+              <span id="render-metrics">Ready to render</span></span
+            ><span>Made for the way you play.</span>
+          </div>
+        </main>
+      </div>
+
+      <main class="page library-page" id="page-cards" hidden>
+        <div class="page-heading">
+          <div>
+            <span class="eyebrow">THE PIECES OF YOUR GAME</span>
+            <h1>Card library</h1>
+            <p>A standard deck, a new world, or something entirely your own.</p>
+          </div>
+          <button class="button primary" id="add-card">
+            <svg class="icon"><use href="#i-plus" /></svg>Add a card
+          </button>
+        </div>
+        <div class="library-layout">
+          <aside class="deck-sidebar">
+            <div class="section-title">
+              <h2>Your decks</h2>
+              <span id="deck-total" class="tiny-pill">2</span>
+            </div>
+            <div id="deck-list"></div>
+            <button class="button full-width" id="import-deck-button">
+              <svg class="icon"><use href="#i-upload" /></svg>Import deck</button
+            ><input type="file" id="deck-file" accept=".json,application/json" hidden /><button
+              class="text-button deck-download"
+              id="export-deck"
+            >
+              <svg class="icon"><use href="#i-download" /></svg>Export this deck
+            </button>
+            <div class="deck-note">
+              <span class="note-suits">♠ <span>♥</span> ♣ <span>♦</span></span>
+              <h3>Bring your own world.</h3>
+              <p>
+                Add artwork, upload an image, or use a Scryfall ID for Magic: The Gathering.
+                Import a JSON list to bring in a whole deck at once.
+              </p>
+              <button class="text-button" id="deck-format-help">
+                See the card format <svg class="icon"><use href="#i-arrow" /></svg>
+              </button>
+            </div>
+            <div class="scryfall-note">
+              <h3>Magic: The Gathering</h3>
+              <p>
+                Card data and full card images from
+                <a href="https://scryfall.com" target="_blank" rel="noreferrer">Scryfall</a>.
+                Cached here for 3 days.
+              </p>
+              <button class="text-button" id="clear-scryfall-cache">Clear card cache</button>
+              <p id="scryfall-cache-status" role="status"></p>
+            </div>
+          </aside>
+          <section class="card-library">
+            <div class="library-toolbar">
+              <div>
+                <h2 id="library-title">Standard playing cards</h2>
+                <p id="library-meta">52 cards · Active on your stage</p>
+              </div>
+              <label class="search-field"
+                ><svg class="icon"><use href="#i-search" /></svg
+                ><input
+                  id="card-search"
+                  type="search"
+                  placeholder="Find a card…"
+                  aria-label="Find a card"
+              /></label>
+            </div>
+            <div id="card-grid" class="card-grid"></div>
+            <div id="card-empty" class="empty-state" hidden>
+              <svg class="icon"><use href="#i-search" /></svg>
+              <h3>No cards found</h3>
+              <p>Try another name or suit.</p>
+            </div>
+          </section>
+        </div>
+      </main>
+
+      <main class="page api-page" id="page-api" hidden>
+        <div class="page-heading">
+          <div>
+            <span class="eyebrow">UNDER THE TABLE</span>
+            <h1>A scene, as a request.</h1>
+            <p>The same small engine powers the workbench and your code.</p>
+          </div>
+          <span class="api-badge"><span class="status-dot"></span>Static render API · v1</span>
+        </div>
+        <div class="api-layout">
+          <section class="api-docs">
+            <h2>Your first render</h2>
+            <p>
+              Pass a scene in a URL. Render in the browser. Download an image when you're ready.
+            </p>
+            <div class="code-example">
+              <div class="code-bar">
+                <span>JavaScript</span
+                ><button class="icon-button" id="copy-example" aria-label="Copy API example">
+                  <svg class="icon"><use href="#i-copy" /></svg>
+                </button>
+              </div>
+              <pre id="api-example"></pre>
+            </div>
+            <button class="button" id="api-render-link">
+              <svg class="icon"><use href="#i-copy" /></svg>Create link for this scene
+            </button>
+            <p class="field-help" id="url-status" role="status">
+              Your playground URL follows the current request.
+            </p>
+            <h2>A few small services</h2>
+            <div class="service-list">
+              <div>
+                <span>01</span><strong>State</strong>
+                <p>Validated commands, snapshots, undo & redo.</p>
+              </div>
+              <div>
+                <span>02</span><strong>Cards</strong>
+                <p>Deck definitions, image art & card transfers.</p>
+              </div>
+              <div>
+                <span>03</span><strong>Layout</strong>
+                <p>Players, zones, stacks & bounded overflow.</p>
+              </div>
+              <div>
+                <span>04</span><strong>Renderer</strong>
+                <p>Deterministic SVG with a scene registry.</p>
+              </div>
+              <div>
+                <span>05</span><strong>Export</strong>
+                <p>Portable SVG, exact-size PNG & scene JSON.</p>
+              </div>
+            </div>
+            <div class="api-note">
+              <svg class="icon"><use href="#i-code" /></svg>
+              <p>
+                Static HTML and JavaScript. The caller supplies the scene; this page handles
+                layout, artwork, and image export. Game state and permissions belong to the
+                caller. See
+                <a href="README.md" target="_blank" rel="noopener">README.md</a> for the full
+                contract.
+              </p>
+            </div>
+          </section>
+          <section class="request-panel">
+            <div class="request-heading">
+              <div>
+                <h2>Live configuration</h2>
+                <p>Edit the request, then send it to the stage.</p>
+              </div>
+              <button class="button quiet" id="load-config">Load current</button>
+            </div>
+            <label class="sr-only" for="config-editor">Scene configuration JSON</label
+            ><textarea
+              id="config-editor"
+              spellcheck="false"
+              aria-describedby="config-error"
+            ></textarea>
+            <p id="config-error" class="form-error" role="alert" hidden></p>
+            <div class="request-actions">
+              <button class="button" id="import-scene-button">
+                <svg class="icon"><use href="#i-upload" /></svg>Import JSON</button
+              ><input
+                type="file"
+                id="scene-file"
+                accept=".json,application/json"
+                hidden
+              /><button class="button primary" id="apply-config">
+                Apply to stage <svg class="icon"><use href="#i-arrow" /></svg>
+              </button>
+            </div>
+            <div class="event-heading">
+              <span class="eyebrow">RECENT COMMANDS</span
+              ><span id="revision-label">revision 0</span>
+            </div>
+            <ol id="event-log" class="event-log">
+              <li>
+                <span class="status-dot"></span><code>engine.ready</code
+                ><span>initial state</span>
+              </li>
+            </ol>
+          </section>
+        </div>
+      </main>
+    </div>
+
+    <dialog id="render-link-dialog" aria-labelledby="render-link-title">
+      <div class="dialog-heading">
+        <div>
+          <span class="eyebrow">STATIC RENDER API</span>
+          <h2 id="render-link-title">Your render link</h2>
+        </div>
+        <button
+          class="icon-button"
+          data-close-dialog="render-link-dialog"
+          aria-label="Close render link"
+        >
+          <svg class="icon"><use href="#i-close" /></svg>
+        </button>
+      </div>
+      <div class="render-link-body">
+        <p>
+          Open this URL in any current browser to reproduce the scene. The browser can download
+          a PNG or SVG.
+        </p>
+        <label class="field"
+          >Presentation<select id="render-link-mode">
+            <option value="page">Page with download controls</option>
+            <option value="embed">Scene only · for embedding</option>
+          </select></label
+        >
+        <label class="field"
+          >Render URL<textarea
+            id="render-link-value"
+            rows="4"
+            readonly
+            spellcheck="false"
+          ></textarea>
+        </label>
+        <p class="field-help" id="render-link-info" role="status">Preparing link…</p>
+        <p class="form-error" id="render-link-error" role="alert" hidden></p>
+        <p class="field-help">
+          The link contains the supplied scene data. Only include information the recipient may
+          access.
+        </p>
+      </div>
+      <div class="dialog-footer">
+        <div class="dialog-footer-actions">
+          <a class="button" id="open-render-link" target="_blank" rel="noopener noreferrer"
+            >Open render</a
+          >
+          <button class="button primary" id="copy-scene-link" disabled>
+            <svg class="icon"><use href="#i-copy" /></svg>Copy render link
+          </button>
+        </div>
+      </div>
+    </dialog>
+
+    <dialog id="card-dialog" aria-labelledby="card-dialog-title">
+      <form id="card-form">
+        <div class="dialog-heading">
+          <div>
+            <span class="eyebrow">CARD MANAGER</span>
+            <h2 id="card-dialog-title">Make a new card</h2>
+          </div>
+          <button
+            type="button"
+            class="icon-button"
+            data-close-dialog="card-dialog"
+            aria-label="Close card editor"
+          >
+            <svg class="icon"><use href="#i-close" /></svg>
+          </button>
+        </div>
+        <div class="card-editor-body">
+          <div class="editor-preview">
+            <div id="editor-card-preview"></div>
+            <span>LIVE PREVIEW</span>
+          </div>
+          <div class="editor-fields">
+            <label class="field"
+              >Card source<select id="edit-card-source">
+                <option value="custom">Custom / playing card</option>
+                <option value="scryfall">Magic: The Gathering · Scryfall</option>
+              </select></label
+            >
+            <div id="scryfall-fields" hidden>
+              <label class="field"
+                >Scryfall card ID<input
+                  id="edit-scryfall-id"
+                  maxlength="36"
+                  placeholder="683a5707-cddb-494d-9b41-51b4584ded69"
+                  autocomplete="off"
+                  spellcheck="false"
+              /></label>
+              <div class="scryfall-lookup">
+                <label class="field"
+                  >Card face<select id="edit-scryfall-face">
+                    <option value="front">Front</option>
+                    <option value="back">Back · double-faced card</option>
+                  </select></label
+                >
+                <button type="button" class="button" id="load-scryfall-card">Load card</button>
+              </div>
+              <p class="field-help">
+                Use the printing’s Scryfall UUID. Names and full card images load automatically
+                and stay cached for 3 days.
+              </p>
+            </div>
+            <label class="field"
+              >Card name<input
+                id="edit-card-name"
+                required
+                maxlength="150"
+                placeholder="The Wanderer"
+            /></label>
+            <div id="custom-card-fields">
+              <div class="two-fields">
+                <label class="field"
+                  >Rank <span class="optional">optional</span
+                  ><input id="edit-card-rank" maxlength="8" placeholder="A" /></label
+                ><label class="field"
+                  >Suit<select id="edit-card-suit">
+                    <option value="">Custom / none</option>
+                    <option value="spades">♠ Spades</option>
+                    <option value="hearts">♥ Hearts</option>
+                    <option value="clubs">♣ Clubs</option>
+                    <option value="diamonds">♦ Diamonds</option>
+                  </select></label
+                >
+              </div>
+              <label class="field"
+                >Artwork URL <span class="optional">optional</span
+                ><input
+                  id="edit-card-art"
+                  type="text"
+                  placeholder="https://…/artwork.jpg" /></label
+              ><label class="upload-art" for="art-file"
+                ><svg class="icon"><use href="#i-upload" /></svg
+                ><span id="art-upload-label">Or upload an image</span
+                ><input
+                  id="art-file"
+                  type="file"
+                  accept="image/png,image/jpeg,image/webp,image/gif,image/avif"
+                  hidden /></label
+              ><button type="button" class="text-button clear-art" id="clear-card-art" hidden>
+                Remove artwork
+              </button>
+              <p class="field-help">
+                Use a CORS-enabled image URL for export. Uploaded images stay inside your scene.
+              </p>
+            </div>
+          </div>
+        </div>
+        <p class="form-error" id="card-error" role="alert" hidden></p>
+        <div class="dialog-footer">
+          <button type="button" class="button danger-quiet" id="delete-card">
+            <svg class="icon"><use href="#i-trash" /></svg>Delete card
+          </button>
+          <div class="dialog-footer-actions">
+            <button type="button" class="button" data-close-dialog="card-dialog">Cancel</button
+            ><button type="submit" class="button primary" id="save-card">Save card</button>
+          </div>
+        </div>
+      </form>
+    </dialog>
+
+    <dialog id="guide-dialog" class="guide-dialog" aria-labelledby="guide-title">
+      <div class="dialog-heading">
+        <div>
+          <span class="eyebrow">A QUICK FIELD GUIDE</span>
+          <h2 id="guide-title">Welcome to the table.</h2>
+        </div>
+        <button class="icon-button" data-close-dialog="guide-dialog" aria-label="Close guide">
+          <svg class="icon"><use href="#i-close" /></svg>
+        </button>
+      </div>
+      <div class="guide-body">
+        <p>
+          Build an arrangement in <strong>Stage</strong>, bring your own pieces in
+          <strong>Cards</strong>, and automate it all from <strong>API</strong>.
+        </p>
+        <div class="guide-step">
+          <span>01</span>
+          <div>
+            <h3>Find your frame</h3>
+            <p>
+              Choose any dimensions from 64 to 4096 pixels per side. The exported image matches
+              them exactly.
+            </p>
+          </div>
+        </div>
+        <div class="guide-step">
+          <span>02</span>
+          <div>
+            <h3>Get a little closer</h3>
+            <p>
+              Click a zone in the preview to focus it. Change its arrangement, card count, or
+              face visibility in Zones. Return to Overview for the whole table.
+            </p>
+          </div>
+        </div>
+        <div class="guide-step">
+          <span>03</span>
+          <div>
+            <h3>Bring your cards</h3>
+            <p>
+              Import an array of card objects, or a deck with an id, name, and cards array.
+              Artwork is optional.
+            </p>
+            <pre>
+[
+  { "id": "sun", "name": "The Sun",
+    "artUrl": "https://example.com/sun.jpg" },
+  { "id": "ace", "name": "Ace of Spades",
+    "rank": "A", "suit": "spades" }
+]</pre
+            >
+          </div>
+        </div>
+        <div class="guide-step">
+          <span>04</span>
+          <div>
+            <h3>Keep what you make</h3>
+            <p>
+              Export PNG or SVG from the top bar. Save scene downloads a reusable JSON
+              configuration. Changes save locally when browser storage is available.
+            </p>
+          </div>
+        </div>
+        <p class="guide-footnote">
+          These are visual game-state fixtures. Setup presets don't enforce poker or Commander
+          rules, or deck limits. Player images use zone visibility rules; scene JSON retains the
+          complete game state. Undo: ⌘/Ctrl Z · Redo: ⌘/Ctrl Shift Z.
+        </p>
+      </div>
+    </dialog>
+    <div id="toast" class="toast" role="status" aria-live="polite" hidden></div>
+    <noscript><p class="noscript">Enable JavaScript to use the scene studio.</p></noscript>
+  </body>
+</html>

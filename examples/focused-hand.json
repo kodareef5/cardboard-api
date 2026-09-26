@@ -1,0 +1,6 @@
+{
+  "stage": { "width": 1080, "height": 1920, "theme": "evergreen" },
+  "players": 2,
+  "view": { "mode": "focus", "playerId": "p1", "zoneId": "hand", "density": "balanced" },
+  "seed": 42
+}

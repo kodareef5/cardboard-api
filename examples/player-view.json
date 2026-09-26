@@ -1,0 +1,11 @@
+{
+  "stage": { "width": 512, "height": 512, "theme": "evergreen" },
+  "players": 4,
+  "view": {
+    "mode": "player",
+    "viewerId": "p2",
+    "playerId": "p2",
+    "playerScope": "table"
+  },
+  "seed": 42
+}

@@ -1,0 +1,11 @@
+{
+  "id": "my-deck",
+  "name": "My first deck",
+  "cards": [
+    { "id": "sun", "name": "The Sun", "art": 0 },
+    { "id": "moon", "name": "The Moon", "art": 1 },
+    { "id": "forest", "name": "The Forest", "art": 2 },
+    { "id": "star", "name": "The Star", "art": 3 },
+    { "id": "ace", "name": "Ace of Spades", "rank": "A", "suit": "spades" }
+  ]
+}
