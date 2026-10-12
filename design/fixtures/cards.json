@@ -1,0 +1,74 @@
+[
+  {
+    "id": "llanowar-elves",
+    "name": "Llanowar Elves",
+    "scryfallId": "6a0b230b-d391-4998-a3f7-7b158a0ec2cd",
+    "typeLine": "Creature — Elf Druid"
+  },
+  {
+    "id": "serra-angel",
+    "name": "Serra Angel",
+    "scryfallId": "b8c5e74c-96e7-4a1f-93b7-14d776fe4b2d",
+    "typeLine": "Creature — Angel"
+  },
+  {
+    "id": "shivan-dragon",
+    "name": "Shivan Dragon",
+    "scryfallId": "702c4781-670b-49ae-b511-90ed119841b0",
+    "typeLine": "Creature — Dragon"
+  },
+  {
+    "id": "grizzly-bears",
+    "name": "Grizzly Bears",
+    "scryfallId": "409f9b88-f03e-40b6-9883-68c14c37c0de",
+    "typeLine": "Creature — Bear"
+  },
+  {
+    "id": "counterspell",
+    "name": "Counterspell",
+    "scryfallId": "4f616706-ec97-4923-bb1e-11a69fbaa1f8",
+    "typeLine": "Instant"
+  },
+  {
+    "id": "lightning-bolt",
+    "name": "Lightning Bolt",
+    "scryfallId": "7673784e-db4b-43a1-8d55-1bb9fc1e284f",
+    "typeLine": "Instant"
+  },
+  {
+    "id": "giant-growth",
+    "name": "Giant Growth",
+    "scryfallId": "fd1f95bf-48ea-455a-8a6c-0249b11c8900",
+    "typeLine": "Instant"
+  },
+  {
+    "id": "swords-to-plowshares",
+    "name": "Swords to Plowshares",
+    "scryfallId": "f7e12477-d59f-442b-a678-1be746d0b7be",
+    "typeLine": "Instant"
+  },
+  {
+    "id": "forest",
+    "name": "Forest",
+    "scryfallId": "2e781bfd-f8cb-4d20-b977-4359f3a21311",
+    "typeLine": "Basic Land — Forest"
+  },
+  {
+    "id": "island",
+    "name": "Island",
+    "scryfallId": "1335d293-3dd2-4f13-bd2c-22181f4528ee",
+    "typeLine": "Basic Land — Island"
+  },
+  {
+    "id": "plains",
+    "name": "Plains",
+    "scryfallId": "09ac862f-0a51-44dd-b86f-9412b8218b13",
+    "typeLine": "Basic Land — Plains"
+  },
+  {
+    "id": "mountain",
+    "name": "Mountain",
+    "scryfallId": "85177bd7-6c50-48da-b692-ae5fe7bd357c",
+    "typeLine": "Basic Land — Mountain"
+  }
+]

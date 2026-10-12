@@ -13,9 +13,12 @@ for (const asset of [
   'styles.css',
   'render.css',
   'js',
+  'assets',
+  'design',
   'examples',
   'README.md',
   'EXTRAS.md',
+  'MTG26.md',
   'llm.txt',
 ]) {
   await cp(new URL(asset, root), new URL(asset, output), { recursive: true });

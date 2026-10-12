@@ -14,6 +14,18 @@
     '#d6a8bc',
     '#83b9ca',
   ];
+  const THEME_PRESETS = {
+    mtg26: {
+      name: 'MTG 26',
+      description:
+        'A cinematic Magic table with player portraits, gold frames, and perspective layouts.',
+      config: {
+        scene: 'mtg',
+        stage: { width: 1920, height: 1080, theme: 'evergreen', texture: false },
+        view: { mode: 'player', mtg: { background: 'sunrise' } },
+      },
+    },
+  };
   const THEMES = {
     evergreen: {
       name: 'Evergreen',
@@ -229,6 +241,26 @@
   function normalize(config = {}) {
     if (!config || typeof config !== 'object' || Array.isArray(config))
       fail('Configuration must be a JSON object.');
+    if (config.theme !== undefined) {
+      if (typeof config.theme !== 'string') fail('Theme preset must be a name.');
+      const preset = THEME_PRESETS[config.theme];
+      if (!Object.hasOwn(THEME_PRESETS, config.theme)) fail('Unknown theme preset.');
+      if (
+        config.view?.mtg !== undefined &&
+        (!config.view.mtg || typeof config.view.mtg !== 'object' || Array.isArray(config.view.mtg))
+      )
+        fail('MTG: view.mtg must be an object.');
+      config = {
+        ...preset.config,
+        ...config,
+        stage: { ...preset.config.stage, ...config.stage },
+        view: {
+          ...preset.config.view,
+          ...config.view,
+          mtg: { ...preset.config.view.mtg, ...config.view?.mtg },
+        },
+      };
+    }
     const setup = config.setup || 'standard';
     if (!['standard', 'poker', 'commander'].includes(setup))
       fail('Unknown setup. Choose standard, poker, or commander.');
@@ -247,6 +279,18 @@
       const count = config.players ?? (setup === 'commander' || setup === 'poker' ? 4 : 2);
       integer(count, 1, 8, 'Player count');
       players = Array.from({ length: count }, (_, i) => makePlayer(i, setup));
+      if (config.theme === 'mtg26')
+        players.forEach((player) => {
+          player.zones = [
+            zone('library', 'Library', 60, 'stack', true),
+            zone('battlefield', 'Battlefield', 0, 'grid'),
+            zone('graveyard', 'Graveyard', 0, 'stack'),
+            zone('exile', 'Exile', 0, 'stack'),
+            zone('hand', 'Hand', 0, 'fan'),
+            zone('command', 'Command', 0, 'grid'),
+            zone('stack', 'Stack', 0, 'grid'),
+          ];
+        });
     }
     players.forEach((player) => {
       if (player.avatarUrl === null || player.avatarUrl === '') delete player.avatarUrl;
@@ -262,6 +306,7 @@
         });
     });
     const state = {
+      ...(config.theme !== undefined ? { theme: config.theme } : {}),
       version: config.version ?? 1,
       scene: config.scene ?? 'tabletop',
       setup,
@@ -292,6 +337,8 @@
     return state;
   }
   function validate(state) {
+    if (state.theme !== undefined && !Object.hasOwn(THEME_PRESETS, state.theme))
+      fail('Unknown theme preset.');
     if (state.version !== 1) fail('Unsupported state version. This engine uses version 1.');
     if (typeof state.scene !== 'string' || !/^[a-z][a-z0-9-]{0,39}$/.test(state.scene))
       fail('Invalid scene ID.');
@@ -361,6 +408,7 @@
     if (!player || !player.zones.some((z) => z.id === view.zoneId))
       fail('The selected player and zone must exist.');
     T.validateExtras(state);
+    if (state.scene === 'mtg' && T.validateMtg) T.validateMtg(state);
     return state;
   }
   function hash(text) {
@@ -643,6 +691,14 @@
     return result;
   }
   Object.assign(T, {
+    listThemePresets: () =>
+      Object.entries(THEME_PRESETS).map(([id, preset]) => ({
+        id, name: preset.name, description: preset.description,
+      })),
+    themePreset: (id) => {
+      if (!Object.hasOwn(THEME_PRESETS, id)) fail('Unknown theme preset.');
+      return { theme: id, ...clone(THEME_PRESETS[id].config) };
+    },
     createEngine,
     normalize,
     validate,

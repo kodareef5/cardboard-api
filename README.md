@@ -4,6 +4,8 @@ For agents: start with [llm.txt](https://cardboard-api.pages.dev/llm.txt) for th
 
 A stateless renderer with a static HTML playground. An external application supplies a scene request; the browser lays it out, loads card artwork, and can export a PNG or SVG. Game state, identity, permissions, and rules belong to the caller. No runtime dependencies, application server, database, or account system are required. Optional Scryfall cards load directly from Scryfall with a three-day browser cache.
 
+**MTG 26 design preview:** [Open the layout explorer](design/index.html) for custom Magic layouts at 1920 × 1080 and 1080 × 1920. Use `theme: 'mtg26'` to select the preset. See [the preset and caller-controlled views](MTG26.md).
+
 Open **index.html** directly, or run **`npm start`** / **`node serve.mjs`** and visit **http://127.0.0.1:8765**. An optional port can be supplied with `node serve.mjs 9000`. Serving locally is useful for browser integrations, but isn't required for the workbench. Use a current Chrome, Firefox, or Safari.
 
 ## Static URL API

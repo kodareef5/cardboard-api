@@ -709,7 +709,8 @@
     const state = T.normalize(config),
       renderer = scenes.get(state.scene);
     if (!renderer) throw new Error(`Scene "${state.scene}" is not registered.`);
-    return composeFocus(renderer(state, options), state, options);
+    const result = renderer(state, options);
+    return result.handlesFocus ? result : composeFocus(result, state, options);
   }
   async function renderDetailedAsync(config = {}, options = {}) {
     const state = T.normalize(config);

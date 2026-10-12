@@ -4,6 +4,8 @@
 
   // Selection and audience are separate: focusing an opponent's zone must not reveal it.
   function canSeeFaces(state, player, zone) {
+    if (state.scene === 'mtg' && state.view.viewerId === null)
+      return zone.visibility === 'public';
     if (state.view.viewerId === null) return !zone.faceDown;
     return (
       zone.visibility === 'public' ||
@@ -15,13 +17,18 @@
     const state = T.normalize(config);
     const player = state.players.find((p) => p.id === playerId);
     if (!player) throw new Error('The viewing player must exist.');
+    const mtgFocus = state.scene === 'mtg' ? T.mtg.context(state).focus : null;
+    const keepSelection = mtgFocus && !['table', 'self'].includes(mtgFocus);
     state.view = {
       ...state.view,
       mode: 'player',
       viewerId: playerId,
-      playerId,
-      zoneId: player.zones.find((z) => z.id === 'hand')?.id || player.zones[0].id,
+      playerId: keepSelection ? state.view.playerId : playerId,
+      zoneId: keepSelection
+        ? state.view.zoneId
+        : player.zones.find((z) => z.id === 'hand')?.id || player.zones[0].id,
       playerScope: scope ?? state.view.playerScope,
+      ...(mtgFocus ? { mtg: { ...state.view.mtg, focus: mtgFocus } } : {}),
     };
     return T.validate(state);
   }

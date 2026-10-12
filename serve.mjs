@@ -14,6 +14,9 @@ const types = {
   '.mjs': 'text/javascript',
   '.json': 'application/json',
   '.svg': 'image/svg+xml',
+  '.png': 'image/png',
+  '.jpg': 'image/jpeg',
+  '.webp': 'image/webp',
   '.md': 'text/plain',
   '.txt': 'text/plain',
 };

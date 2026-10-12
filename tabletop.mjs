@@ -5,6 +5,8 @@ import './js/perspective.js';
 import './js/layout.js';
 import './js/scryfall.js';
 import './js/renderer.js';
+import './js/mtg-layout.js';
+import './js/mtg-renderer.js';
 import './js/url.js';
 import './js/library.js';
 import { createScryfallDiskStore } from './scryfall-cache.mjs';
@@ -50,6 +52,8 @@ export const {
   registerScene,
   listScenes,
   themes,
+  listThemePresets,
+  themePreset,
   layout,
 } = globalThis.Tabletop;
 export default globalThis.Tabletop;

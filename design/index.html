@@ -1,0 +1,145 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Cardboard · MTG layout studies</title>
+    <link rel="stylesheet" href="study.css" />
+    <script defer src="../js/engine.js"></script>
+    <script defer src="../js/extras.js"></script>
+    <script defer src="../js/perspective.js"></script>
+    <script defer src="../js/layout.js"></script>
+    <script defer src="../js/scryfall.js"></script>
+    <script defer src="../js/renderer.js"></script>
+    <script defer src="../js/mtg-layout.js"></script>
+    <script defer src="../js/mtg-renderer.js"></script>
+    <script defer src="../js/archive.js"></script>
+    <script defer src="../js/export.js"></script>
+    <script defer src="../js/url.js"></script>
+    <script defer src="fixtures.js"></script>
+    <script defer src="study.js"></script>
+  </head>
+  <body>
+    <header>
+      <a class="brand" href="../">cardboard<span>.</span></a>
+      <div class="heading">Magic: The Gathering <span>Layout studies / 01</span></div>
+      <a class="studio-link" href="../">Open studio ↗</a>
+    </header>
+    <main>
+      <aside>
+        <div class="intro">
+          <p class="eyebrow">MTG 26 / THEME STUDY</p>
+          <h1>A seat at<br />the table.</h1>
+          <p>
+            A custom playmat for every perspective. Explore a video frame or a vertical
+            Short.
+          </p>
+        </div>
+        <fieldset>
+          <legend>Canvas</legend>
+          <div class="format-options">
+            <label
+              ><input type="radio" name="format" value="landscape" checked /><span
+                ><i class="landscape-icon"></i>YouTube<small>1920 × 1080</small></span
+              ></label
+            ><label
+              ><input type="radio" name="format" value="portrait" /><span
+                ><i class="portrait-icon"></i>Shorts<small>1080 × 1920</small></span
+              ></label
+            >
+          </div>
+        </fieldset>
+        <fieldset>
+          <legend>Table</legend>
+          <label
+            >Players<select id="players">
+              <option value="2" selected>2 players</option>
+              <option value="3">3 players</option>
+              <option value="4">4 players</option>
+            </select></label
+          ><label>Viewing as<select id="viewer"></select></label
+          ><label
+            >Focus<select id="focus">
+              <option value="table">Whole table + own hand</option>
+              <option value="self">Own board + hand</option>
+              <option value="battlefield">Battlefield</option>
+              <option value="hand">Hand</option>
+              <option value="graveyard">Graveyard</option>
+              <option value="exile">Exile</option>
+              <option value="library">Library</option>
+              <option value="command">Command zone</option>
+              <option value="stack">Shared stack</option>
+              <option value="combat">Combat assignments</option>
+              <option value="card">Individual card</option>
+            </select></label
+          ><label id="subject-label">Focus player<select id="subject"></select></label
+          ><label id="card-layout-label" hidden
+            >Card composition<select id="card-layout">
+              <option value="showcase">Showcase</option>
+              <option value="sidecar">Beside the table</option>
+              <option value="spotlight">Spotlight over table</option>
+            </select></label
+          >
+        </fieldset>
+        <fieldset>
+          <legend>Moment</legend>
+          <div class="two-fields">
+            <label>Active player<select id="active"></select></label
+            ><label>Priority<select id="priority"></select></label>
+          </div>
+          <label
+            >Phase<select id="phase">
+              <option value="beginning">Beginning</option>
+              <option value="precombat-main" selected>First main</option>
+              <option value="combat">Combat / declare blockers</option>
+              <option value="postcombat-main">Second main</option>
+              <option value="ending">Ending</option>
+            </select></label
+          ><label class="check"
+            ><input id="spells" type="checkbox" />Two spells on the stack</label
+          ><label class="check"
+            ><input id="crowded" type="checkbox" />Crowded battlefield</label
+          >
+        </fieldset>
+        <fieldset>
+          <legend>Atmosphere</legend>
+          <label
+            >Background<select id="background">
+              <option value="sunrise">Guardian · Sunrise</option>
+              <option value="eclipse">Guardian · Eclipse</option>
+              <option value="rose">Guardian · Rose</option>
+              <option value="none">Plain table</option>
+            </select></label
+          >
+        </fieldset>
+      </aside>
+      <section class="workspace" aria-label="Layout preview">
+        <div class="preview-bar">
+          <div>
+            <span class="live-dot"></span
+            ><span id="preview-label">Player perspective</span>
+          </div>
+          <span id="dimensions">1920 × 1080</span>
+        </div>
+        <div class="canvas-wrap">
+          <div id="preview" role="region" aria-label="Rendered game image"></div>
+          <p id="error" role="alert" hidden></p>
+        </div>
+        <div class="preview-footer">
+          <p id="status" role="status">Loading the table…</p>
+          <span>Click a card to inspect it. Click a zone to focus.</span>
+        </div>
+        <div class="actions">
+          <button id="download" class="primary" disabled>Download PNG ↓</button
+          ><button id="render-link" disabled>Open render ↗</button
+          ><button id="json" disabled>Save scene JSON</button
+          ><button id="reset-focus">Back to table</button>
+        </div>
+        <p class="note">
+          The viewing seat stays fixed as the active player changes. Opponent hands and
+          library faces remain concealed.
+        </p>
+      </section>
+    </main>
+  </body>
+</html>
