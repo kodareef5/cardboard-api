@@ -55,6 +55,7 @@ Backgrounds are `assets/backgrounds/guardian-{sunrise,eclipse,rose}.png`; `backg
 | `view.mtg.step` | Optional caller-supplied label, up to 50 characters. |
 | `view.mtg.lands` | Player IDs mapped to zero-based battlefield positions that belong on the land rail. |
 | `view.mtg.background` / `backgroundUrl` | `sunrise`, `eclipse`, `rose` or `none`; a URL replaces the named background. |
+| `view.mtg.colors` | `{ primary, secondary }`, six-digit hex, each optional. The primary tints the table, panels and shadows; the secondary the metal trim, labels and icons. Every tone keeps the design's lightness, so text stays legible. The defaults are the original green and gold. |
 
 Phase and active player change status, not focus or viewing seat. `forPlayer()` changes the recipient while preserving explicit zone focus. Public MTG overview conceals owner-only cards, including enlarged cards. Existing `public`, `owner`, and `hidden` zone visibility and per-card `faceDown` annotations remain authoritative.
 

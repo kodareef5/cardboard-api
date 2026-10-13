@@ -61,6 +61,13 @@
     if (!backgrounds.includes(c.background)) fail('Unknown background.');
     if (c.backgroundUrl != null && (typeof c.backgroundUrl !== 'string' || !T.validArt(c.backgroundUrl)))
       fail('backgroundUrl must be an HTTP(S) URL or a base64 image data URL.');
+    if (
+      c.colors !== undefined &&
+      (!object(c.colors) ||
+        Object.keys(c.colors).some((k) => !['primary', 'secondary'].includes(k)) ||
+        Object.values(c.colors).some((v) => typeof v !== 'string' || !/^#[0-9a-f]{6}$/i.test(v)))
+    )
+      fail('colors takes a primary and a secondary, each a six-digit hex colour.');
     if (c.phase !== undefined && !phases.includes(c.phase)) fail('Unknown phase.');
     if (c.step !== undefined && (typeof c.step !== 'string' || c.step.length > 50))
       fail('Step must be text up to 50 characters.');

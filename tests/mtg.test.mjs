@@ -234,6 +234,20 @@ test('a background URL replaces the named background, and bundled backgrounds re
     assert.throws(() => T.normalize({ ...state, view: { ...state.view, mtg: { ...state.view.mtg, backgroundUrl } } }), /backgroundUrl/);
 });
 
+test('frame colours follow a primary and a secondary, and the defaults are the original green and gold', () => {
+  const original = T.mtg.palette();
+  assert.deepEqual([original.table, original.panel, original.gold, original.muted, original.slotLine], ['#133d33', '#092521', '#d9bf84', '#b0c6b8', '#d7ddbc']);
+  const state = make();
+  const colors = { primary: '#2a1040', secondary: '#c0c8d8' }, tones = T.mtg.palette(colors);
+  const svg = T.render(T.normalize({ ...state, view: { ...state.view, mtg: { ...state.view.mtg, colors } } }));
+  for (const tone of [tones.table, tones.panel, tones.gold, tones.metal3, tones.vignetteEdge]) assert.ok(svg.includes(tone), tone);
+  assert.ok(!svg.includes(original.gold) && !svg.includes(original.panel), 'no original trim or panel remains');
+  assert.equal(T.mtg.palette({ secondary: colors.secondary }).table, original.table, 'each colour is optional');
+  assert.ok(T.render(state).includes(original.gold), 'the next render without colours is the original again');
+  for (const bad of [{ primary: 'red' }, { tertiary: '#000000' }, '#000000', { secondary: '#12345' }])
+    assert.throws(() => T.normalize({ ...state, view: { ...state.view, mtg: { ...state.view.mtg, colors: bad } } }), /colors/);
+});
+
 test('MTG metadata validates references and escapes caller labels', () => {
   const state = make({ phase: 'combat' });
   for (const edit of [

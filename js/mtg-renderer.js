@@ -8,10 +8,83 @@
   const asset = (name) =>
     T.assetBase ? `${T.assetBase}${name}` : scriptURL ? new URL(`../assets/${name}`, scriptURL).href : `assets/${name}`;
   const n = (v) => Number(v.toFixed(2)),
-    ink = '#f4edda',
-    muted = '#b0c6b8',
-    gold = '#d9bf84',
-    dark = '#092521';
+    ink = '#f4edda';
+  // The frame palette. A primary colour sets the table, panels and shadows; a secondary sets the metal
+  // trim and labels. Each tone is [family, hue offset in degrees, lightness, saturation ratio] against
+  // the original green and gold, so those reproduce the original design exactly, and any other pair
+  // keeps its contrast: lightness stays, while hue and saturation follow the chosen colour.
+  const PRIMARY = '#133d33',
+    SECONDARY = '#d9bf84';
+  const TONES = {
+    table: ['p', 0, 0.157, 1.0],
+    panel: ['p', 6, 0.09, 1.16],
+    bar: ['p', -1, 0.078, 1.33],
+    shade: ['p', -1, 0.076, 1.12],
+    medallion: ['p', -5, 0.165, 0.86],
+    medallionEdge: ['p', 1, 0.059, 1.14],
+    vignette: ['p', -2, 0.161, 0.84],
+    vignetteEdge: ['p', -3, 0.049, 1.9],
+    cardShadow: ['p', -3, 0.047, 1.9],
+    frameShadow: ['p', 1, 0.035, 1.9],
+    cardBack: ['p', 5, 0.122, 0.8],
+    pileBack: ['p', 4, 0.139, 0.62],
+    slot: ['p', -4, 0.563, 0.73],
+    zone: ['p', 0, 0.186, 0.74],
+    field: ['p', 3, 0.212, 1.09],
+    lifeRing: ['p', 5, 0.071, 1.06],
+    pipEmpty: ['p', -16, 0.357, 0.23],
+    muted: ['p', -24, 0.733, 0.31],
+    gold: ['s', 0, 0.684, 1.0],
+    metal0: ['s', -2, 0.404, 0.5],
+    metal1: ['s', 3, 0.706, 0.88],
+    metal2: ['s', 1, 0.384, 0.44],
+    metal3: ['s', 2, 0.816, 1.37],
+    metal4: ['s', -2, 0.48, 0.58],
+    edge: ['s', 1, 0.492, 0.57],
+    edgeLight: ['s', 5, 0.904, 1.89],
+    glint: ['s', 3, 0.886, 1.89],
+    cardLine: ['s', -2, 0.59, 0.53],
+    pileLine: ['s', 2, 0.571, 0.41],
+    faint: ['s', 2, 0.661, 0.54],
+    pipFull: ['s', 2, 0.796, 1.13],
+    slotLine: ['s', 29, 0.802, 0.62],
+    fieldLine: ['s', 18, 0.735, 0.77],
+  };
+  function hsl(hex) {
+    const [r, g, b] = [1, 3, 5].map((i) => parseInt(hex.slice(i, i + 2), 16) / 255),
+      max = Math.max(r, g, b),
+      min = Math.min(r, g, b),
+      l = (max + min) / 2,
+      d = max - min;
+    if (!d) return [0, 0, l];
+    const h = max === r ? (g - b) / d + (g < b ? 6 : 0) : max === g ? (b - r) / d + 2 : (r - g) / d + 4;
+    return [h * 60, l > 0.5 ? d / (2 - max - min) : d / (max + min), l];
+  }
+  function hex(h, s, l) {
+    const q = l < 0.5 ? l * (1 + s) : l + s - l * s,
+      p = 2 * l - q;
+    const channel = (t) => {
+      t = (t + 1) % 1;
+      const v = t < 1 / 6 ? p + (q - p) * 6 * t : t < 1 / 2 ? q : t < 2 / 3 ? p + (q - p) * (2 / 3 - t) * 6 : p;
+      return Math.round(v * 255).toString(16).padStart(2, '0');
+    };
+    return `#${channel(h / 360 + 1 / 3)}${channel(h / 360)}${channel(h / 360 - 1 / 3)}`;
+  }
+  function palette(colors = {}) {
+    const from = { p: hsl(colors.primary || PRIMARY), s: hsl(colors.secondary || SECONDARY) };
+    return Object.fromEntries(
+      Object.entries(TONES).map(([name, [family, shift, l, ratio]]) => {
+        const [h, s] = from[family];
+        return [name, hex((h + shift + 360) % 360, Math.min(1, s * ratio), l)];
+      }),
+    );
+  }
+  M.palette = palette;
+  // The palette of the render in progress. Rendering is synchronous, so the helpers below read it here.
+  let C = palette(),
+    muted = C.muted,
+    gold = C.gold,
+    dark = C.panel;
   const text = (x, y, value, size = 14, fill = ink, extra = '') =>
     `<text x="${n(x)}" y="${n(y)}" font-size="${size}" fill="${fill}" ${extra}>${esc(value)}</text>`;
   const fit = (x, y, value, size, width, fill = ink, extra = '') =>
@@ -42,7 +115,7 @@
     r,
     { opacity = 0.82, cut = 18, lean = 0, bright = false, fill = dark } = {},
   ) {
-    return `<g><path d="${polygon(r, cut, lean)}" fill="${fill}" fill-opacity="${opacity}" stroke="url(#mtg-metal)" stroke-width="${bright ? 2 : 1.15}" filter="url(#mtg-frame-shadow)"/><path d="${polygon(inset(r, 6), Math.max(4, cut - 3), lean)}" fill="none" stroke="${gold}" stroke-opacity=".32" stroke-width=".65"/><path d="M${n(r.x + cut)} ${n(r.y + r.h - 2)}H${n(r.x + r.w - cut)}" fill="none" stroke="url(#mtg-edge)" stroke-width="${bright ? 2 : 1}"/>${bright ? `<circle cx="${n(r.x + cut)}" cy="${n(r.y + r.h - 2)}" r="3" fill="#fff0c5" filter="url(#mtg-glint)"/><circle cx="${n(r.x + r.w - cut)}" cy="${n(r.y + r.h - 2)}" r="2.4" fill="#fff0c5" filter="url(#mtg-glint)"/>` : ''}</g>`;
+    return `<g><path d="${polygon(r, cut, lean)}" fill="${fill}" fill-opacity="${opacity}" stroke="url(#mtg-metal)" stroke-width="${bright ? 2 : 1.15}" filter="url(#mtg-frame-shadow)"/><path d="${polygon(inset(r, 6), Math.max(4, cut - 3), lean)}" fill="none" stroke="${gold}" stroke-opacity=".32" stroke-width=".65"/><path d="M${n(r.x + cut)} ${n(r.y + r.h - 2)}H${n(r.x + r.w - cut)}" fill="none" stroke="url(#mtg-edge)" stroke-width="${bright ? 2 : 1}"/>${bright ? `<circle cx="${n(r.x + cut)}" cy="${n(r.y + r.h - 2)}" r="3" fill="${C.glint}" filter="url(#mtg-glint)"/><circle cx="${n(r.x + r.w - cut)}" cy="${n(r.y + r.h - 2)}" r="2.4" fill="${C.glint}" filter="url(#mtg-glint)"/>` : ''}</g>`;
   }
   function label(x, y, value, size = 13, width = 300) {
     const length = Math.min(width * 0.7, String(value).length * (size * 0.8 + 2));
@@ -77,6 +150,8 @@
       { W, H } = l,
       requested = new Map(),
       counted = seenZones;
+    C = palette(c.colors);
+    ({ muted, gold, panel: dark } = C);
     let renderedCards = 0,
       visibleZoneCards = 0,
       serial = 0;
@@ -122,7 +197,7 @@
       const value =
           T.playerCounters(p).find((v) => /life/i.test(v.name))?.count ?? p.stats.life,
         exact = T.formatCounter(value);
-      return `<g data-counter="life"><title>${esc(`${p.name}: ${exact} life`)}</title><circle cx="${n(x)}" cy="${n(y)}" r="${n(r + 4)}" fill="#081c19" stroke="${gold}" stroke-opacity=".45" filter="url(#mtg-frame-shadow)"/><circle cx="${n(x)}" cy="${n(y)}" r="${n(r)}" fill="url(#mtg-medallion)" stroke="url(#mtg-metal)" stroke-width="1.7"/><circle cx="${n(x)}" cy="${n(y)}" r="${n(r - 4)}" fill="none" stroke="${gold}" stroke-opacity=".4" stroke-width=".6"/>${fit(x, y + (small ? 7 : 8), exact, small ? r * 0.9 : r * 0.87, r * 1.65, ink, 'text-anchor="middle" font-family="Georgia,serif"')}${small ? '' : text(x, y + r * 0.54, 'LIFE', Math.max(7, r * 0.19), gold, 'text-anchor="middle" letter-spacing="2"')}</g>`;
+      return `<g data-counter="life"><title>${esc(`${p.name}: ${exact} life`)}</title><circle cx="${n(x)}" cy="${n(y)}" r="${n(r + 4)}" fill="${C.lifeRing}" stroke="${gold}" stroke-opacity=".45" filter="url(#mtg-frame-shadow)"/><circle cx="${n(x)}" cy="${n(y)}" r="${n(r)}" fill="url(#mtg-medallion)" stroke="url(#mtg-metal)" stroke-width="1.7"/><circle cx="${n(x)}" cy="${n(y)}" r="${n(r - 4)}" fill="none" stroke="${gold}" stroke-opacity=".4" stroke-width=".6"/>${fit(x, y + (small ? 7 : 8), exact, small ? r * 0.9 : r * 0.87, r * 1.65, ink, 'text-anchor="middle" font-family="Georgia,serif"')}${small ? '' : text(x, y + r * 0.54, 'LIFE', Math.max(7, r * 0.19), gold, 'text-anchor="middle" letter-spacing="2"')}</g>`;
     }
     function card(
       p,
@@ -171,7 +246,7 @@
       if (accent)
         out += `<rect x="-3" y="-3" width="${n(cw + 6)}" height="${n(ch + 6)}" rx="5" fill="none" stroke="${accent}" stroke-width="2.5"/>`;
       if (concealed)
-        out += `<svg width="${n(cw)}" height="${n(ch)}" viewBox="0 0 70 100"><rect x="1" y="1" width="68" height="98" rx="4" fill="#122c28" stroke="#b4a079" stroke-width="1.3"/><rect x="5" y="5" width="60" height="90" rx="2" fill="none" stroke="#b4a079" stroke-opacity=".6"/><path d="M35 20L48 50 35 80 22 50Z" fill="none" stroke="#b4a079" stroke-opacity=".6"/><path d="M35 29V71M29 37V63M41 37V63M23 44V56M47 44V56" stroke="#c1b490" stroke-width="2"/><circle cx="35" cy="50" r="8" fill="#122c28" stroke="#c1b490"/></svg>`;
+        out += `<svg width="${n(cw)}" height="${n(ch)}" viewBox="0 0 70 100"><rect x="1" y="1" width="68" height="98" rx="4" fill="${C.cardBack}" stroke="${C.cardLine}" stroke-width="1.3"/><rect x="5" y="5" width="60" height="90" rx="2" fill="none" stroke="${C.cardLine}" stroke-opacity=".6"/><path d="M35 20L48 50 35 80 22 50Z" fill="none" stroke="${C.cardLine}" stroke-opacity=".6"/><path d="M35 29V71M29 37V63M41 37V63M23 44V56M47 44V56" stroke="${C.faint}" stroke-width="2"/><circle cx="35" cy="50" r="8" fill="${C.cardBack}" stroke="${C.faint}"/></svg>`;
       else
         out += T.cardSVG(definition, {
           theme: state.stage.theme,
@@ -232,7 +307,7 @@
           ch = cw / 0.7,
           space = Math.min(cw * 1.13, (r.w - cw) / (slots - 1));
         for (let i = 0; i < slots; i++)
-          out += `<rect x="${n(r.x + r.w / 2 - (space * (slots - 1) + cw) / 2 + i * space)}" y="${n(r.y + (r.h - ch) / 2)}" width="${n(cw)}" height="${n(ch)}" rx="5" fill="#65baa0" fill-opacity=".025" stroke="#d7ddbc" stroke-opacity=".24" stroke-width=".8"/>`;
+          out += `<rect x="${n(r.x + r.w / 2 - (space * (slots - 1) + cw) / 2 + i * space)}" y="${n(r.y + (r.h - ch) / 2)}" width="${n(cw)}" height="${n(ch)}" rx="5" fill="${C.slot}" fill-opacity=".025" stroke="${C.slotLine}" stroke-opacity=".24" stroke-width=".8"/>`;
       }
       if (!count) return out;
       const cols = overlap
@@ -322,7 +397,7 @@
             ch = cw / 0.7,
             x = area.x + (area.w - cw) / 2,
             y = area.y + (area.h - ch) / 2;
-          out += `<rect x="${n(x - 7)}" y="${n(y - 5)}" width="${n(cw)}" height="${n(ch)}" rx="4" fill="#182f2b" stroke="#a99c7a"/><rect x="${n(x - 3)}" y="${n(y - 2)}" width="${n(cw)}" height="${n(ch)}" rx="4" fill="#182f2b" stroke="#a99c7a"/>`;
+          out += `<rect x="${n(x - 7)}" y="${n(y - 5)}" width="${n(cw)}" height="${n(ch)}" rx="4" fill="${C.pileBack}" stroke="${C.pileLine}"/><rect x="${n(x - 3)}" y="${n(y - 2)}" width="${n(cw)}" height="${n(ch)}" rx="4" fill="${C.pileBack}" stroke="${C.pileLine}"/>`;
         }
         out += card(p, z, 0, area, {
           angle: z.id === 'library' ? -3 : 1,
@@ -331,7 +406,7 @@
       } else {
         const cw = Math.min(area.w * 0.75, area.h * 0.7),
           ch = cw / 0.7;
-        out += `<rect x="${n(area.x + (area.w - cw) / 2)}" y="${n(area.y + (area.h - ch) / 2)}" width="${n(cw)}" height="${n(ch)}" rx="4" fill="#1d4239" fill-opacity=".3" stroke="${gold}" stroke-opacity=".2"/>${icon(z.id, area.x + area.w / 2, area.y + area.h / 2, compact ? 24 : 37)}`;
+        out += `<rect x="${n(area.x + (area.w - cw) / 2)}" y="${n(area.y + (area.h - ch) / 2)}" width="${n(cw)}" height="${n(ch)}" rx="4" fill="${C.zone}" fill-opacity=".3" stroke="${gold}" stroke-opacity=".2"/>${icon(z.id, area.x + area.w / 2, area.y + area.h / 2, compact ? 24 : 37)}`;
       }
       out +=
         fit(
@@ -393,7 +468,7 @@
           if (Number.isInteger(count) && count >= 0 && count <= 5) {
             const pitch = Math.min(13, (rail.w - 55) / (Math.max(3, count) - 1));
             for (let pip = 0; pip < Math.max(3, count); pip++)
-              out += `<circle cx="${n(rail.x + 47 + pip * pitch)}" cy="${n(y + 10)}" r="4" fill="${pip < count ? '#ead9ac' : '#50665b'}" stroke="${gold}" stroke-opacity=".5"/>`;
+              out += `<circle cx="${n(rail.x + 47 + pip * pitch)}" cy="${n(y + 10)}" r="4" fill="${pip < count ? C.pipFull : C.pipEmpty}" stroke="${gold}" stroke-opacity=".5"/>`;
           } else
             out += fit(
               rail.x + 43,
@@ -648,12 +723,12 @@
         cut: 24,
         lean: l.portrait ? 8 : 25,
         bright: true,
-        fill: '#175549',
+        fill: C.field,
       });
       const x = r.x + r.w / 2,
         y = r.y + r.h * 0.4,
         rad = Math.min(r.w * 0.19, r.h * 0.59);
-      out += `<g fill="none" stroke="#d7d7a0" stroke-opacity=".19"><circle cx="${n(x)}" cy="${n(y)}" r="${n(rad)}"/><circle cx="${n(x)}" cy="${n(y)}" r="${n(rad + 8)}"/><path d="M${n(x)} ${n(r.y + 10)}v${n(r.h - 24)}M${n(r.x + 24)} ${n(y)}h${n(r.w - 48)}"/></g>${sigil(x, y, 75, 0.3)}`;
+      out += `<g fill="none" stroke="${C.fieldLine}" stroke-opacity=".19"><circle cx="${n(x)}" cy="${n(y)}" r="${n(rad)}"/><circle cx="${n(x)}" cy="${n(y)}" r="${n(rad + 8)}"/><path d="M${n(x)} ${n(r.y + 10)}v${n(r.h - 24)}M${n(r.x + 24)} ${n(y)}h${n(r.w - 48)}"/></g>${sigil(x, y, 75, 0.3)}`;
       return (
         out +
         fieldCards(p, { x: r.x + 36, y: r.y + 30, w: r.w - 72, h: r.h - 85 }) +
@@ -1151,20 +1226,20 @@
     }
     const audience = l.viewer ? `${l.viewer.name}'s perspective` : 'Public table';
     let out = `<svg xmlns="http://www.w3.org/2000/svg" width="${state.stage.width}" height="${state.stage.height}" viewBox="0 0 ${W} ${H}" role="img" aria-label="${esc(`MTG 26 · ${audience} · ${c.focus}`)}"><defs>
-    <linearGradient id="mtg-metal" x1="0" y1="0" x2=".9" y2="1"><stop stop-color="#82704c"/><stop offset=".24" stop-color="#d7c591"/><stop offset=".48" stop-color="#796c4b"/><stop offset=".73" stop-color="#f2e0ae"/><stop offset="1" stop-color="#a08655"/></linearGradient>
-    <linearGradient id="mtg-edge"><stop stop-color="#a38d58" stop-opacity="0"/><stop offset=".5" stop-color="#fff4ce"/><stop offset="1" stop-color="#a38d58" stop-opacity="0"/></linearGradient>
-    <linearGradient id="mtg-portrait-shade" x1="0" y1="0" x2="0" y2="1"><stop offset=".55" stop-color="#081f19" stop-opacity="0"/><stop offset="1" stop-color="#081f19" stop-opacity=".6"/></linearGradient>
-    <radialGradient id="mtg-medallion"><stop stop-color="#173d31"/><stop offset="1" stop-color="#061814"/></radialGradient>
-    <radialGradient id="mtg-vignette"><stop offset=".23" stop-color="#173b31" stop-opacity="0"/><stop offset="1" stop-color="#001912" stop-opacity=".74"/></radialGradient>
-    <filter id="mtg-card-shadow" x="-45%" y="-30%" width="190%" height="180%" color-interpolation-filters="sRGB"><feDropShadow dx="0" dy="6" stdDeviation="3" flood-color="#001811" flood-opacity=".8"/></filter>
-    <filter id="mtg-frame-shadow" x="-10%" y="-10%" width="120%" height="125%"><feDropShadow dx="0" dy="3" stdDeviation="3" flood-color="#00120e" flood-opacity=".55"/></filter>
+    <linearGradient id="mtg-metal" x1="0" y1="0" x2=".9" y2="1"><stop stop-color="${C.metal0}"/><stop offset=".24" stop-color="${C.metal1}"/><stop offset=".48" stop-color="${C.metal2}"/><stop offset=".73" stop-color="${C.metal3}"/><stop offset="1" stop-color="${C.metal4}"/></linearGradient>
+    <linearGradient id="mtg-edge"><stop stop-color="${C.edge}" stop-opacity="0"/><stop offset=".5" stop-color="${C.edgeLight}"/><stop offset="1" stop-color="${C.edge}" stop-opacity="0"/></linearGradient>
+    <linearGradient id="mtg-portrait-shade" x1="0" y1="0" x2="0" y2="1"><stop offset=".55" stop-color="${C.shade}" stop-opacity="0"/><stop offset="1" stop-color="${C.shade}" stop-opacity=".6"/></linearGradient>
+    <radialGradient id="mtg-medallion"><stop stop-color="${C.medallion}"/><stop offset="1" stop-color="${C.medallionEdge}"/></radialGradient>
+    <radialGradient id="mtg-vignette"><stop offset=".23" stop-color="${C.vignette}" stop-opacity="0"/><stop offset="1" stop-color="${C.vignetteEdge}" stop-opacity=".74"/></radialGradient>
+    <filter id="mtg-card-shadow" x="-45%" y="-30%" width="190%" height="180%" color-interpolation-filters="sRGB"><feDropShadow dx="0" dy="6" stdDeviation="3" flood-color="${C.cardShadow}" flood-opacity=".8"/></filter>
+    <filter id="mtg-frame-shadow" x="-10%" y="-10%" width="120%" height="125%"><feDropShadow dx="0" dy="3" stdDeviation="3" flood-color="${C.frameShadow}" flood-opacity=".55"/></filter>
     <filter id="mtg-glint" x="-600%" y="-600%" width="1300%" height="1300%"><feGaussianBlur stdDeviation="5"/><feMerge><feMergeNode/><feMergeNode in="SourceGraphic"/></feMerge></filter>
-    <marker id="mtg-arrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0L10 5 0 10 3 5Z" fill="#eec19a"/></marker><clipPath id="mtg-crop"><rect width="${W}" height="${H}"/></clipPath></defs><g clip-path="url(#mtg-crop)" font-family="Arial,Helvetica,sans-serif"><rect width="${W}" height="${H}" fill="#133d33"/>`;
+    <marker id="mtg-arrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0L10 5 0 10 3 5Z" fill="#eec19a"/></marker><clipPath id="mtg-crop"><rect width="${W}" height="${H}"/></clipPath></defs><g clip-path="url(#mtg-crop)" font-family="Arial,Helvetica,sans-serif"><rect width="${W}" height="${H}" fill="${C.table}"/>`;
     // A caller's backgroundUrl replaces the named background; either is decoration, drawn under the vignette.
     const backdrop = c.backgroundUrl || (c.background !== 'none' ? asset(`backgrounds/guardian-${c.background}.png`) : '');
     if (backdrop)
       out += `<image data-background-image="true" href="${esc(backdrop)}" width="${W}" height="${H}" preserveAspectRatio="xMidYMid slice"/>`;
-    out += `<rect width="${W}" height="${H}" fill="url(#mtg-vignette)"/><rect x="9" y="9" width="${W - 18}" height="${H - 18}" fill="none" stroke="${gold}" stroke-opacity=".24"/><rect width="${W}" height="29" fill="#06221b" fill-opacity=".79"/>${text(23, 19, 'MTG 26', 10, gold, 'font-family="Georgia,serif" letter-spacing="2.5"')}${fit(111, 19, audience, 9, W * 0.22, muted, 'letter-spacing=".6"')}`;
+    out += `<rect width="${W}" height="${H}" fill="url(#mtg-vignette)"/><rect x="9" y="9" width="${W - 18}" height="${H - 18}" fill="none" stroke="${gold}" stroke-opacity=".24"/><rect width="${W}" height="29" fill="${C.bar}" fill-opacity=".79"/>${text(23, 19, 'MTG 26', 10, gold, 'font-family="Georgia,serif" letter-spacing="2.5"')}${fit(111, 19, audience, 9, W * 0.22, muted, 'letter-spacing=".6"')}`;
     const phaseX = W * (l.portrait ? 0.36 : 0.34),
       phaseWidth = (W * (l.portrait ? 0.41 : 0.34)) / M.phases.length;
     M.phases.forEach((phase, i) => {
