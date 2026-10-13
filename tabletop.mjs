@@ -9,7 +9,10 @@ import './js/mtg-layout.js';
 import './js/mtg-renderer.js';
 import './js/url.js';
 import './js/library.js';
+import { fileURLToPath } from 'node:url';
 import { createScryfallDiskStore } from './scryfall-cache.mjs';
+// Bundled artwork by absolute path: rasterizers such as resvg read it, and the SVG works wherever it is written.
+globalThis.Tabletop.assetBase = fileURLToPath(new URL('./assets/', import.meta.url));
 globalThis.Tabletop.scryfall = globalThis.Tabletop.createScryfallClient({
   store: createScryfallDiskStore(process.env.TABLETOP_SCRYFALL_CACHE || undefined),
 });

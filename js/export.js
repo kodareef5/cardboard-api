@@ -42,12 +42,12 @@
         .map((image) => image.getAttribute('href')),
     );
     const dimensions = new Map();
-    // A URL used by a card is still required, even if an avatar uses it too.
+    // Avatars and backgrounds are decoration. A URL used by a card is still required, even if decoration uses it too.
+    const decoration = (image) =>
+      image.hasAttribute('data-avatar-image') || image.hasAttribute('data-background-image');
     const optional = new Set(
       sources.filter((url) =>
-        images
-          .filter((image) => image.getAttribute('href') === url)
-          .every((image) => image.hasAttribute('data-avatar-image')),
+        images.filter((image) => image.getAttribute('href') === url).every(decoration),
       ),
     );
     // A small queue keeps large custom decks from opening hundreds of requests at once.
@@ -79,7 +79,7 @@
               data = await blobToDataURL(blob);
             }
             // An SVG can decode successfully even when one of its child images is broken.
-            // Required card art must decode; optional avatars can use their initials tile.
+            // Required card art must decode; avatars fall back to initials, backgrounds to the plain table.
             const image = await readImage(data);
             if (avatars.has(url)) dimensions.set(url, image);
             embedded.set(url, data);
@@ -106,7 +106,7 @@
       if (value) {
         image.setAttribute('href', value);
         if (image.hasAttribute('data-avatar-image')) fitAvatarImage(image, dimensions.get(url));
-      } else if (image.hasAttribute('data-avatar-image')) image.remove();
+      } else if (decoration(image)) image.remove();
     });
     return new XMLSerializer().serializeToString(document);
   }

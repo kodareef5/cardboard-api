@@ -59,6 +59,8 @@
     const c = context(state);
     if (!focuses.includes(c.focus)) fail('Unknown focus.');
     if (!backgrounds.includes(c.background)) fail('Unknown background.');
+    if (c.backgroundUrl != null && (typeof c.backgroundUrl !== 'string' || !T.validArt(c.backgroundUrl)))
+      fail('backgroundUrl must be an HTTP(S) URL or a base64 image data URL.');
     if (c.phase !== undefined && !phases.includes(c.phase)) fail('Unknown phase.');
     if (c.step !== undefined && (typeof c.step !== 'string' || c.step.length > 50))
       fail('Step must be text up to 50 characters.');

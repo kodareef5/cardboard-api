@@ -1,5 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import { existsSync } from 'node:fs';
 import { readFile } from 'node:fs/promises';
 import T from '../tabletop.mjs';
 import '../design/fixtures.js';
@@ -215,6 +216,22 @@ test('shared stack order is caller supplied, complete, unique and validated atom
     assert.equal(JSON.stringify(engine.state), before);
   }
   assert.equal(engine.canUndo, false);
+});
+
+test('a background URL replaces the named background, and bundled backgrounds resolve from any directory', async () => {
+  const state = make();
+  const href = (svg) => /<image data-background-image="true" href="([^"]*)"/.exec(svg)?.[1];
+  const named = href(T.render(state));
+  assert.ok(named.endsWith('backgrounds/guardian-sunrise.png') && existsSync(named), 'Node draws the bundled file by absolute path');
+  const custom = T.normalize({ ...state, view: { ...state.view, mtg: { ...state.view.mtg, backgroundUrl: 'https://example.com/table.jpg?a=1&b=2' } } });
+  assert.equal(custom.view.mtg.backgroundUrl, 'https://example.com/table.jpg?a=1&b=2');
+  assert.deepEqual(await T.decodeRequest(await T.encodeRequest(custom)), custom);
+  assert.equal(href(T.render(custom)), 'https://example.com/table.jpg?a=1&amp;b=2', 'the URL replaces the named background, escaped');
+  const data = 'data:image/jpeg;base64,/9j/4AAQ';
+  assert.equal(href(T.render({ ...state, view: { ...state.view, mtg: { ...state.view.mtg, background: 'none', backgroundUrl: data } } })), data);
+  assert.equal(href(T.render({ ...state, view: { ...state.view, mtg: { ...state.view.mtg, background: 'none' } } })), undefined, "'none' with no URL is plain green");
+  for (const backgroundUrl of ['javascript:alert(1)', 'file:///etc/passwd', 'data:text/html;base64,PGI+', 42])
+    assert.throws(() => T.normalize({ ...state, view: { ...state.view, mtg: { ...state.view.mtg, backgroundUrl } } }), /backgroundUrl/);
 });
 
 test('MTG metadata validates references and escapes caller labels', () => {

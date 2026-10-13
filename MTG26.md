@@ -40,7 +40,7 @@ const png = await Tabletop.toPNG(request);
 
 Landscape places opponents along the far edge, the recipient's battlefield in the centre, a portrait and life medallion at the lower left, lands above the curved hand, and piles at the lower right. Portrait rearranges these areas vertically. Three- and four-player scenes use angled opponent seats. Lands are positions within the battlefield, not another game zone. Tapped lands retain their physical card size.
 
-Backgrounds are `assets/backgrounds/guardian-{sunrise,eclipse,rose}.png`; `background: 'none'` uses plain green. Portraits live in `assets/avatars/`; pass their served HTTP(S) URL as `player.avatarUrl`, or omit it for initials. Original references are in `design/references/`.
+Backgrounds are `assets/backgrounds/guardian-{sunrise,eclipse,rose}.png`; `background: 'none'` uses plain green. `view.mtg.backgroundUrl` (HTTP(S) or a base64 image data URL) replaces the named background with your own, cropped to cover. Backgrounds are decoration: a browser export that cannot fetch one uses plain green. In Node the bundled files are referenced by absolute path, so resvg and other local rasterizers find them from any working directory. Portraits live in `assets/avatars/`; pass their served HTTP(S) URL as `player.avatarUrl`, or omit it for initials. Original references are in `design/references/`.
 
 ## Caller-controlled views
 
@@ -54,6 +54,7 @@ Backgrounds are `assets/backgrounds/guardian-{sunrise,eclipse,rose}.png`; `backg
 | `view.mtg.phase` | `beginning`, `precombat-main`, `combat`, `postcombat-main`, or `ending`. |
 | `view.mtg.step` | Optional caller-supplied label, up to 50 characters. |
 | `view.mtg.lands` | Player IDs mapped to zero-based battlefield positions that belong on the land rail. |
+| `view.mtg.background` / `backgroundUrl` | `sunrise`, `eclipse`, `rose` or `none`; a URL replaces the named background. |
 
 Phase and active player change status, not focus or viewing seat. `forPlayer()` changes the recipient while preserving explicit zone focus. Public MTG overview conceals owner-only cards, including enlarged cards. Existing `public`, `owner`, and `hidden` zone visibility and per-card `faceDown` annotations remain authoritative.
 

@@ -704,6 +704,7 @@
     validate,
     validateDeck,
     validateAvatar,
+    validArt,
     normalizeCard,
     normalizeDeck,
     cardAt,

@@ -40,7 +40,7 @@ In browser automation, await `Tabletop.viewer.ready` after navigation. It reject
 - Avatars: optional `player.avatarUrl` uses a centered square cover crop and colored initials on failure. Browser avatar PNG/SVG exports default to 512×512; see the README's Player avatars section.
 - Exact cards: provide deck definitions and zone `cardIds`/`count`. Unassigned positions use seeded sample cards.
 - MTG: supply a Scryfall printing ID in `scryfallId`; assets have a three-day browser cache. Custom cards accept `artUrl`; remote hosts must allow CORS for export.
-- MTG 26 presentation: `theme: 'mtg26'` selects the custom 2–4 player layout, supplied artwork, and 1920×1080 defaults. Set `stage: {width:1080,height:1920}` for Shorts. `view.viewerId` chooses the recipient; `view.mtg` supplies focus, turn, phase, priority, land positions, combat, and global stack order. Active player never changes the viewing seat. See MTG26.md for the snapshot contract and layout explorer.
+- MTG 26 presentation: `theme: 'mtg26'` selects the custom 2–4 player layout, supplied artwork, and 1920×1080 defaults. Set `stage: {width:1080,height:1920}` for Shorts. `view.viewerId` chooses the recipient; `view.mtg` supplies focus, turn, phase, priority, land positions, combat, global stack order, and the background (a named one or `backgroundUrl`). Active player never changes the viewing seat. See MTG26.md for the snapshot contract and layout explorer.
 - Visibility controls drawing, not access to the request. Omit private data before sharing a URL; selecting a player does not redact it.
 
 ## Docs and examples

@@ -4,8 +4,9 @@
     M = T.mtg,
     esc = T.escape,
     scriptURL = global.document?.currentScript?.src;
+  // Node sets T.assetBase to the package's own assets folder, so a local rasterizer finds them from any directory.
   const asset = (name) =>
-    scriptURL ? new URL(`../assets/${name}`, scriptURL).href : `assets/${name}`;
+    T.assetBase ? `${T.assetBase}${name}` : scriptURL ? new URL(`../assets/${name}`, scriptURL).href : `assets/${name}`;
   const n = (v) => Number(v.toFixed(2)),
     ink = '#f4edda',
     muted = '#b0c6b8',
@@ -1159,8 +1160,10 @@
     <filter id="mtg-frame-shadow" x="-10%" y="-10%" width="120%" height="125%"><feDropShadow dx="0" dy="3" stdDeviation="3" flood-color="#00120e" flood-opacity=".55"/></filter>
     <filter id="mtg-glint" x="-600%" y="-600%" width="1300%" height="1300%"><feGaussianBlur stdDeviation="5"/><feMerge><feMergeNode/><feMergeNode in="SourceGraphic"/></feMerge></filter>
     <marker id="mtg-arrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0L10 5 0 10 3 5Z" fill="#eec19a"/></marker><clipPath id="mtg-crop"><rect width="${W}" height="${H}"/></clipPath></defs><g clip-path="url(#mtg-crop)" font-family="Arial,Helvetica,sans-serif"><rect width="${W}" height="${H}" fill="#133d33"/>`;
-    if (c.background !== 'none')
-      out += `<image href="${esc(asset(`backgrounds/guardian-${c.background}.png`))}" width="${W}" height="${H}" preserveAspectRatio="xMidYMid slice"/>`;
+    // A caller's backgroundUrl replaces the named background; either is decoration, drawn under the vignette.
+    const backdrop = c.backgroundUrl || (c.background !== 'none' ? asset(`backgrounds/guardian-${c.background}.png`) : '');
+    if (backdrop)
+      out += `<image data-background-image="true" href="${esc(backdrop)}" width="${W}" height="${H}" preserveAspectRatio="xMidYMid slice"/>`;
     out += `<rect width="${W}" height="${H}" fill="url(#mtg-vignette)"/><rect x="9" y="9" width="${W - 18}" height="${H - 18}" fill="none" stroke="${gold}" stroke-opacity=".24"/><rect width="${W}" height="29" fill="#06221b" fill-opacity=".79"/>${text(23, 19, 'MTG 26', 10, gold, 'font-family="Georgia,serif" letter-spacing="2.5"')}${fit(111, 19, audience, 9, W * 0.22, muted, 'letter-spacing=".6"')}`;
     const phaseX = W * (l.portrait ? 0.36 : 0.34),
       phaseWidth = (W * (l.portrait ? 0.41 : 0.34)) / M.phases.length;
